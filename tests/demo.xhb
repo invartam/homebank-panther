@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<homebank v="1.6000000000000001" d="51003">
+  <properties title="Portefeuille de demonstration" curr="1"/>
+  <cur key="1" iso="EUR" frac="2"/>
+  <cur key="2" iso="USD" frac="2"/>
+  <account key="1" name="Compte courant" type="1" curr="1" pos="1" initial="100" minimum="-50"/>
+  <account key="2" name="Livret" type="7" curr="1" pos="2" initial="200"/>
+  <account key="3" name="Compte clos" flags="2" type="1" curr="1" initial="999"/>
+  <account key="4" name="Compte dollars" type="1" curr="2" pos="3" initial="10"/>
+  <pay key="1" name="Supermarche"/>
+  <cat key="1" name="Maison"/>
+  <cat key="2" parent="1" name="Courses"/>
+  <ope date="739890" account="1" amount="-20" st="2" payee="1" category="2" wording="Courses" info="123"/>
+  <ope date="739891" account="1" amount="-10" st="1" wording="Telephone"/>
+  <ope date="739920" account="1" amount="-5" st="0" wording="Operation future"/>
+  <ope date="739891" account="1" amount="1000" st="3" wording="Annulee"/>
+  <ope date="739891" account="2" amount="40" st="2"/>
+  <ope date="739900" account="1" amount="-25" flags="8" dst_account="2" st="0" kxfer="1" wording="Vers livret"/>
+  <ope date="739900" account="2" amount="25" flags="8" dst_account="1" st="0" kxfer="1" wording="Depuis compte courant"/>
+  <fav key="1" account="1" amount="-15" recflg="1" nextdate="739920" every="1" unit="2"/>
+</homebank>

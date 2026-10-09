@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key><string>HomeBankPanther</string>
+  <key>CFBundleIdentifier</key><string>lu.benjy.homebankwallet.panther</string>
+  <key>CFBundleName</key><string>HomeBank Panther</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleSignature</key><string>HBPW</string>
+  <key>CFBundleShortVersionString</key><string>0.4.0</string>
+  <key>CFBundleVersion</key><string>0.4.0</string>
+  <key>LSMinimumSystemVersion</key><string>10.3.9</string>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>CFBundleDocumentTypes</key>
+  <array><dict>
+    <key>CFBundleTypeName</key><string>Fichier HomeBank</string>
+    <key>CFBundleTypeExtensions</key><array><string>xhb</string></array>
+    <key>CFBundleTypeRole</key><string>Editor</string>
+  </dict></array>
+</dict>
+</plist>
