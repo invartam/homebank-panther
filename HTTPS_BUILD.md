@@ -4,13 +4,13 @@ Ce kit reste **experimental** et n'est pas un client Drive. L'utilisateur a conf
 
 ## Preparation Sur Le Mac Recent
 
-Depuis le projet `homebank-web`, avec Node.js recent et un curl capable de HTTPS moderne :
+Depuis la racine du projet `homebank-panther`, avec Node.js recent et un curl capable de HTTPS moderne :
 
 ```sh
-make -C panther drive-tools-prepare
+make drive-tools-prepare
 ```
 
-Le preparateur telecharge uniquement les sources publiques et le bundle de certificats. Il verifie leurs SHA-256 figes avant de creer `panther/build/HomeBankPanther-https-sources.tar.gz` et son fichier `.sha256`. Il ne lit aucune donnee bancaire ni configuration Google. Le Mac recent n'est utilise que pour preparer les sources : **pas de relais pour les futurs transferts Drive**.
+Le preparateur telecharge uniquement les sources publiques et le bundle de certificats. Il verifie leurs SHA-256 figes avant de creer `build/HomeBankPanther-https-sources.tar.gz` et son fichier `.sha256`. Il ne lit aucune donnee bancaire ni configuration Google. Le Mac recent n'est utilise que pour preparer les sources : **pas de relais pour les futurs transferts Drive**.
 
 Le bundle CA est un instantane Mozilla du 25 septembre 2026 distribue par curl. Si un telechargement ne correspond plus au SHA-256 attendu, arreter : verifier l'origine et mettre a jour le manifeste apres revue, sans accepter automatiquement un nouveau hash.
 

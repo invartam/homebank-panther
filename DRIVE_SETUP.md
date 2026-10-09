@@ -66,7 +66,7 @@ La cle JSON est validee, puis conservee comme mot de passe generique dans le tro
 - Le cache et ses sauvegardes sont dans `~/Library/Application Support/HomeBank Panther/`, dossier prive `0700`, fichiers `0600`. Les donnees bancaires locales ne sont pas chiffrees. Les sauvegardes locales ne sont pas purgees automatiquement : surveiller l'espace disque, surtout sur G3.
 - Une copie locale sans etat de reference n'est jamais envoyee automatiquement. Elle est conservee et un rechargement explicite est necessaire.
 
-Depuis 0.4.0, **Enregistrer** confirme le journal local. Pour utiliser le fichier dans HomeBank original ou copier seulement le `.xhb`, choisir **Fichier > Consolider le fichier XML** ou **Exporter une copie**. Ne pas effacer le journal ni le recu `.panther-commit.plist` pour forcer une reprise. Le rechargement distant apres confirmation consolide d'abord les changements locaux, de sorte que la sauvegarde XML conserve aussi ces operations. Voir [modele et journal](README.md#modele-metier-et-journal-local-040).
+Depuis 0.4.0, **Enregistrer** confirme le journal local. Pour utiliser le fichier dans HomeBank original ou copier seulement le `.xhb`, choisir **Fichier > Consolider le fichier XML** ou **Exporter une copie**. Ne pas effacer le journal ni le recu `.panther-commit.plist` pour forcer une reprise. Le rechargement distant apres confirmation consolide d'abord les changements locaux, de sorte que la sauvegarde XML conserve aussi ces operations. Voir [modele et journal](README_TECHNIQUE.md#modele-metier-et-journal-local-040).
 
 ## 6. Conflits Et Fichiers Introuvables
 
