@@ -1,87 +1,98 @@
 # HomeBank Panther
 
-## Votre quotidien bancaire, sur votre Mac PowerPC.
+**Vos comptes, vos projets, votre Mac PowerPC.**
 
-Retrouvez vos comptes, suivez vos depenses et preparez les prochaines echeances sans quitter votre ancien Mac. **HomeBank Panther** est une application native de gestion bancaire personnelle, concue pour les Mac PowerPC sous **Mac OS X 10.3.9**, avec une cible iMac G3.
+HomeBank Panther vous permet de gérer vos finances personnelles sur votre ancien Mac. Retrouvez vos comptes HomeBank, saisissez vos opérations et anticipez vos prochaines dépenses dans une application native conçue pour **Mac OS X 10.3.9**, avec une cible **iMac G3**.
 
-Elle travaille sur votre fichier HomeBank : vous gardez vos donnees localement et choisissez quand les synchroniser.
+Votre fichier reste au cœur de votre gestion : travaillez localement et synchronisez vos modifications avec Google Drive quand vous le décidez.
 
-**Version 0.4.0** | **Application native Cocoa** | **Mac OS X Panther** | **Fichiers HomeBank .xhb**
+**Version 0.6.0** · **Mac PowerPC** · **Application native Cocoa** · **Fichiers HomeBank `.xhb`**
 
----
+[Guide utilisateur illustré](GUIDE_UTILISATEUR.md) · [Le graphique](#votre-solde-dans-le-temps) · [Premiers pas](#premiers-pas) · [Installation et compilation](README_TECHNIQUE.md) · [Configurer Google Drive](DRIVE_SETUP.md)
 
-## L'essentiel, Au Meme Endroit
+## Gardez une vue claire sur vos finances
 
-### Une vue claire de vos comptes
+Retrouvez vos comptes ouverts et passez facilement de vos comptes bancaires à votre épargne. Chaque compte présente trois repères : le **solde rapproché**, le **solde pointé** et le **solde futur**.
 
-Consultez vos comptes ouverts, filtrez entre banque et epargne et retrouvez vos soldes **rapproche, pointe et futur**. Les couleurs tiennent compte du decouvert autorise, et les devises restent distinctes pour ne pas melanger les montants.
+Les couleurs tiennent compte du découvert autorisé. Les devises restent séparées pour consulter vos montants sans mélanger euros, dollars ou autres monnaies.
 
-### Vos operations au quotidien
+## Anticipez ce qu’il vous reste avant le prochain salaire
 
-Ajoutez des depenses, des revenus et des virements internes. Renseignez separement le tiers, le memo et le numero de paiement, puis classez chaque operation dans ses categories et sous-categories.
+Le solde futur vous aide à estimer ce qui restera disponible avant votre prochaine rentrée de salaire. Il associe les opérations déjà inscrites aux échéances récurrentes encore à venir, **jusqu’au prochain salaire, dont la journée est exclue**.
 
-Retrouvez une operation par recherche, modifiez-la, pointez-la ou rapprochez-la. Les mouvements futurs apparaissent en gris ; la suppression demande une confirmation.
+La détection s’appuie sur le mémo et les catégories de vos opérations. Un revenu récurrent dominant peut également servir de repère ; l’application le signale alors comme **estimé**. Un salaire déjà inscrit à une date future est aussi pris en compte pour déterminer cette échéance.
 
-### Un regard sur les prochaines echeances
+Vous préférez choisir votre horizon ? Activez **Prévision à date choisie** et indiquez une date au format **jj/mm/aaaa**. Cette option est disponible sur **tous les comptes ouverts**, y compris l’épargne et les comptes avec salaire détecté. La journée choisie est incluse dans le calcul.
 
-Explorez vos operations recurrentes dans un calendrier mensuel ou annuel. Consultez le detail d'un jour ou d'un mois, comparez les revenus et depenses, puis passez de la vue generale a un compte particulier.
+Désactivez l’option pour retrouver la prévision automatique avant salaire ou, sans salaire reconnu, le solde des opérations inscrites. Vos choix restent propres à chaque compte pendant la session. Les échéances en retard sont signalées et exclues de la projection ; un calcul incomplet est indiqué comme indisponible.
 
-Les dates futures associent les previsions aux operations deja inscrites. Les virements entrants et sortants sont presentes separement, et l'historique des comptes clos reste accessible dans le calendrier.
+## Gérez vos opérations au quotidien
 
-### Un moteur pense pour les anciennes machines
+Saisissez vos dépenses, revenus et virements internes, puis retrouvez vos mouvements avec la recherche. Renseignez distinctement le **tiers**, le **mémo**, le **numéro de paiement** et la **catégorie**, avec ses sous-catégories.
 
-Les editions ne reconstruisent plus tout le fichier XML. Les changements sont conserves dans un petit journal local, en arriere-plan, tandis que les soldes sont mis a jour pour les comptes concernes.
+Modifiez une opération, pointez-la ou rapprochez-la depuis votre compte. Les opérations futures apparaissent en gris et les suppressions demandent une confirmation. Les virements entre comptes sont liés, avec un montant propre à chaque compte lorsque les devises diffèrent.
 
-L'objectif : reduire le travail demande au processeur lors de la saisie et du rapprochement. Les performances reelles restent a mesurer sur votre machine.
+## Retrouvez vos échéances dans un calendrier
 
-## Local D'abord, Drive Quand Vous Le Decidez
+Les vues **mensuelle** et **annuelle** donnent une lecture de vos opérations et de vos récurrences. Consultez l’ensemble des comptes ou un compte particulier, puis cliquez sur un jour ou un mois pour en afficher le détail.
 
-**Pas de connexion a votre banque.** HomeBank Panther vous aide a consulter et organiser les operations de votre fichier HomeBank ; il n'execute aucun paiement ni virement bancaire.
+Les dates passées et la journée en cours présentent les opérations inscrites. Les dates futures y ajoutent les échéances prévues. Revenus, dépenses et virements entrants ou sortants restent identifiables séparément. Les comptes clos sont consultables sur demande dans le calendrier.
 
-Vos fichiers locaux restent utilisables sans connexion Internet et sans compte Google.
+Les planifications sont proposées en consultation ; leur création et leur modification restent dans HomeBank original.
 
-**Google Drive est une option.** Avec un compte de service configure et un fichier partage, vous pouvez charger votre portefeuille puis cliquer sur **Synchroniser** pour envoyer vos changements dans une nouvelle revision. Les ajouts et modifications ne declenchent pas d'envoi automatique.
+## Votre solde dans le temps
 
-La cle du compte de service est conservee dans le trousseau. Cette integration demande une configuration specifique ; ce n'est pas une connexion a votre compte personnel dans Safari. Consultez le [guide Google Drive](DRIVE_SETUP.md).
+Explorez l’évolution de votre solde avec une **courbe bleue légèrement remplie**, pour un compte, l’ensemble des comptes bancaires ou votre épargne. Parcourez plusieurs années et zoomez jusqu’au détail d’une journée.
 
-## Ce Que Vous Pouvez Faire
+![Graphique de solde sur des données fictives : courbe bleue remplie, prévisions en pointillés et seuil de découvert rouge.](docs/screenshots/balance-plot.png)
 
-| Au quotidien | Avec HomeBank Panther |
+*Capture du tracé natif sur un Mac récent, avec des données fictives. L’apparence des contrôles dépend de la version de macOS.*
+
+Projetez vos opérations inscrites et vos échéances récurrentes sur **3 mois, 1 an ou 5 ans**. La partie prévisionnelle apparaît en pointillés. En vue individuelle, une **ligne rouge matérialise le découvert autorisé** du compte.
+
+Le graphique conserve des horizons indépendants de la prévision avant salaire. Il respecte la devise sélectionnée et ne crée aucune opération.
+
+## Travaillez localement, synchronisez à votre rythme
+
+Vos comptes locaux restent accessibles **sans Internet et sans compte Google**. Les modifications sont enregistrées en arrière-plan dans un journal local, sans reconstruire tout le fichier XML après chaque action. Les prévisions sont également calculées en arrière-plan, avec réutilisation des résultats.
+
+Cette organisation réduit le travail demandé lors de l’édition. Les performances restent dépendantes de votre Mac et de la taille du portefeuille.
+
+Avec Google Drive configuré, chargez votre fichier partagé puis cliquez sur **Synchroniser** pour envoyer vos modifications dans une nouvelle révision. L’indicateur Drive vous permet de repérer les changements en attente. La synchronisation reste **manuelle**, et un conflit distant bloque l’envoi pour éviter un écrasement.
+
+L’accès direct depuis Panther utilise un **compte de service Google** dont la clé est conservée dans le trousseau. Sa mise en place est décrite dans le [guide Google Drive](DRIVE_SETUP.md).
+
+## Premiers pas
+
+1. Préparez l’application avec le [guide d’installation et de compilation](README_TECHNIQUE.md). Xcode est nécessaire pour compiler, mais pas pour exécuter une application déjà compilée.
+2. Ouvrez le [portefeuille de démonstration](tests/demo.xhb) pour découvrir les fonctions, puis une copie de votre fichier HomeBank.
+3. Sélectionnez un compte pour consulter ses soldes et saisir vos opérations. Utilisez **Planifications** pour le calendrier et **Graphique** pour l’évolution du solde.
+4. Activez une prévision à date choisie selon vos besoins. Si vous utilisez Drive, cliquez sur **Synchroniser** lorsque vous souhaitez transmettre vos changements.
+
+### Retrouver vos changements dans HomeBank original
+
+**Enregistrer confirme le journal local.** Pour transmettre un fichier `.xhb` autonome ou l’ouvrir avec vos dernières modifications dans HomeBank original, utilisez **Fichier > Consolider le fichier XML** ou **Exporter une copie**. La synchronisation Drive consolide automatiquement le XML avant l’envoi.
+
+Tant que le fichier n’est pas consolidé, conservez le `.xhb` et son `.panther-journal` ensemble : HomeBank original ne lit pas ce journal. Les procédures de sauvegarde et de récupération sont détaillées dans le [guide technique](README_TECHNIQUE.md).
+
+## Compatibilité
+
+| Élément | Prise en charge |
 | --- | --- |
-| Consulter vos comptes | Soldes rapproche, pointe et futur ; filtres banque et epargne |
-| Suivre vos mouvements | Depenses, revenus et virements internes, y compris entre devises |
-| Retrouver une operation | Recherche par tiers, memo, categorie, numero ou montant |
-| Verifier vos comptes | Pointage, rapprochement et retrait des statuts |
-| Anticiper vos echeances | Consultation des recurrences et calendriers mensuel et annuel |
-| Garder votre historique | Comptes clos consultables dans le calendrier |
-| Conserver vos changements | Journal local automatique et reprise au chargement |
-| Echanger votre portefeuille | Export .xhb et synchronisation Drive manuelle |
+| Machine cible | Mac PowerPC, notamment iMac G3, sous Mac OS X 10.3.9 |
+| Interface | Application native Cocoa |
+| Fichiers | HomeBank `.xhb` UTF-8 non chiffrés, jusqu’au format 1.6 et 8 Mio |
+| Opérations | Dépenses, revenus, virements internes, pointage et rapprochement |
+| Planifications | Consultation, calendrier et projections |
+| Google Drive | Optionnel, accès direct par compte de service et synchronisation manuelle |
 
-## Prendre En Main
+HomeBank Panther est un projet distinct de **HomeBank Web** et de l’application **HomeBank originale**. Il organise les opérations de votre fichier et n’effectue aucun paiement bancaire. Certaines modifications sont protégées sur les opérations rapprochées ou ventilées ; les détails figurent dans le guide technique.
 
-1. Preparez l'application PowerPC avec le [guide technique](README_TECHNIQUE.md), puis installez-la sur votre Mac. Xcode n'est pas necessaire sur la machine qui execute une application deja compilee.
-2. Commencez par le [portefeuille de demonstration](tests/demo.xhb), puis ouvrez une copie de votre fichier HomeBank.
-3. Consultez vos comptes et utilisez **Nouvelle**, **Modifier**, **Pointer** ou **Rapprocher** selon vos besoins.
-4. Pour retrouver les dernieres donnees dans HomeBank original, utilisez **Fichier > Consolider le fichier XML** ou **Exporter une copie**. Pour Drive, cliquez sur **Synchroniser**.
+La compilation et les tests sur un Mac récent ne remplacent pas la validation dans Panther. Le rendu et les performances de cette version restent à vérifier sur le matériel PowerPC cible.
 
-### Un point important pour vos fichiers
+## Pour aller plus loin
 
-**Enregistrer confirme le journal local, pas un nouveau XML.** Tant que vous n'avez pas consolide le fichier, gardez le `.xhb` avec son `.panther-journal`. HomeBank original et les anciennes versions ne lisent pas ce journal.
-
-La consolidation integre les changements dans le XML et conserve une sauvegarde de sa version precedente. La synchronisation Drive effectue cette consolidation avant l'envoi. Gardez egalement des sauvegardes independantes et ne modifiez pas le meme fichier dans plusieurs applications en parallele.
-
-## Compatibilite Et Limites
-
-HomeBank Panther est un projet separe de HomeBank Web et un client distinct de l'application HomeBank originale.
-
-- Cible : Mac PowerPC sous OS X 10.3.9. Les essais sur un Mac recent ne remplacent pas une validation dans Panther et sur le materiel cible.
-- Fichiers : HomeBank `.xhb` UTF-8 non chiffres, jusqu'au format 1.6 et 8 Mio.
-- Planifications : consultation uniquement ; pas de creation, de modification ni de publication automatique des echeances.
-- Operations protegees : certaines modifications de montants, dates ou categories sont bloquees sur les operations rapprochees ou ventilees.
-- Confidentialite : les fichiers locaux ne sont pas chiffres. Panther n'est plus un systeme maintenu ; cette application ne corrige pas les risques de son systeme d'exploitation.
-
-## Documentation
-
-- **[Guide technique](README_TECHNIQUE.md)** : compilation, installation, tests, performances, journal local et recuperation.
-- **[Google Drive](DRIVE_SETUP.md)** : compte de service, partage du fichier, synchronisation et conflits.
-- **[Kit HTTPS PowerPC](HTTPS_BUILD.md)** : preparation et compilation des composants reseau.
+- [Guide utilisateur illustré](GUIDE_UTILISATEUR.md) : parcours détaillés et captures prises sous OS X 10.3.9 dans la VM Panther.
+- [Guide technique](README_TECHNIQUE.md) : compilation, installation, tests, sauvegarde locale et récupération.
+- [Configuration Google Drive](DRIVE_SETUP.md) : compte de service, partage du fichier, synchronisation et conflits.
+- [Kit HTTPS PowerPC](HTTPS_BUILD.md) : préparation des composants réseau pour Panther.

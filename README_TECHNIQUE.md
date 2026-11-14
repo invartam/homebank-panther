@@ -2,7 +2,9 @@
 
 Pour decouvrir le logiciel et ses usages, consulter le [README principal](README.md).
 
-Client natif **0.4.0**, cible iMac G3 / PowerPC, Mac OS X 10.3.9 et Xcode 1.5.
+Le [guide utilisateur illustre](GUIDE_UTILISATEUR.md) detaille les parcours avec des captures prises dans la VM sous OS X 10.3.9.
+
+Client natif **0.6.0**, cible iMac G3 / PowerPC, Mac OS X 10.3.9 et Xcode 1.5.
 Ce n'est pas un package Electron : ce client utilise Cocoa / Foundation et Objective-C avec gestion manuelle de la memoire. Aucun npm, navigateur moderne ou service reseau n'est requis.
 
 ## Fonctionnalites
@@ -22,7 +24,7 @@ Ce n'est pas un package Electron : ce client utilise Cocoa / Foundation et Objec
 - Totaux revenus/depenses et virements entrants/sortants distincts, par devise et par compte ; agenda d'un jour ou d'un mois au clic, puis passage d'une annee au mois choisi.
 - Comptes clos disponibles sur demande dans le calendrier uniquement ; la liste principale des comptes reste limitee aux comptes ouverts.
 
-**Google Drive direct par compte de service** : fichier partage existant, cle dans le trousseau, synchronisation manuelle en arriere-plan avec revisions, detection de conflits et reprise de la copie locale. Le bouton **Synchroniser** envoie les changements locaux ; aucune operation ne declenche un envoi automatique. Voir le [guide de configuration](DRIVE_SETUP.md) et ses limites de validation PPC. Pas de creation/modification de planifications ni de publication automatique d'echeances : leur consultation suit le perimetre de la version web. Les modeles `<fav>` n'entrent jamais dans les soldes des comptes. Les montants, dates et categories des operations ventilees restent proteges ; leurs textes et statuts sont editables. Les montants d'une operation rapprochee ou d'un virement dont une face est rapprochee sont proteges jusqu'au retrait du rapprochement. Le type d'un virement existant ne peut pas etre converti en depense/revenu. Limite de fichier de 8 Mo, fichiers non chiffres uniquement.
+**Google Drive direct par compte de service** : fichier partage existant, cle dans le trousseau, synchronisation manuelle en arriere-plan avec revisions, detection de conflits et reprise de la copie locale. Le bouton **Synchroniser** envoie les changements locaux ; aucune operation ne declenche un envoi automatique. Voir le [guide de configuration](DRIVE_SETUP.md) et ses limites de validation PPC. Pas de creation/modification de planifications ni de publication automatique d'echeances : leur consultation suit le perimetre de la version web. Les modeles `<fav>` contribuent aux previsions, sans modifier les soldes comptables ni creer d'operations. Les montants, dates et categories des operations ventilees restent proteges ; leurs textes et statuts sont editables. Les montants d'une operation rapprochee ou d'un virement dont une face est rapprochee sont proteges jusqu'au retrait du rapprochement. Le type d'un virement existant ne peut pas etre converti en depense/revenu. Limite de fichier de 8 Mo, fichiers non chiffres uniquement.
 
 ## Compiler Dans La VM Panther
 
@@ -36,12 +38,51 @@ make package HTTPS_PREFIX="$HOME/homebank-https-sources/out/ppc"
 ```
 
 - Application : `build/ppc/HomeBankPanther.app`.
-- Archive : `build/HomeBankPanther-0.4.0-ppc.tar.gz`.
+- Archive : `build/HomeBankPanther-0.6.0-ppc.tar.gz`.
 - Fichier fictif de test : `tests/demo.xhb`.
 
 Le Makefile cible `ppc`, le processeur 750/G3 sans AltiVec, et fixe `MACOSX_DEPLOYMENT_TARGET=10.3`, valeur acceptee par l'ancien linker. Le minimum de l'application dans `Info.plist` reste **10.3.9**. Compiler directement dans Panther avec son compilateur et ses frameworks ; ne pas remplacer ce compilateur par le Xcode actuel. Le Makefile ne produit pas un binaire universel Intel / Apple Silicon.
 
-Construire d'abord le [kit HTTPS](HTTPS_BUILD.md), ou reutiliser celui valide dans la VM. Le bundle inclut curl et les CA, et wolfSSL est lie statiquement pour les signatures du compte de service. Copier l'archive vers l'iMac, la decompresser (`tar -xzf HomeBankPanther-0.4.0-ppc.tar.gz`) puis placer l'application dans Applications. Utiliser **Fichier > Ouvrir** pour un `.xhb` local, ou le menu **Drive** pour le fichier partage. Une operation est editable au double-clic ou avec **Modifier**. Ne pas installer Xcode sur l'iMac pour simplement executer l'application.
+Construire d'abord le [kit HTTPS](HTTPS_BUILD.md), ou reutiliser celui valide dans la VM. Le bundle inclut curl et les CA, et wolfSSL est lie statiquement pour les signatures du compte de service. Copier l'archive vers l'iMac, la decompresser (`tar -xzf HomeBankPanther-0.6.0-ppc.tar.gz`) puis placer l'application dans Applications. Utiliser **Fichier > Ouvrir** pour un `.xhb` local, ou le menu **Drive** pour le fichier partage. Une operation est editable au double-clic ou avec **Modifier**. Ne pas installer Xcode sur l'iMac pour simplement executer l'application.
+
+### Solde futur avant salaire et date choisie (0.6.0)
+
+Le calcul derive est implemente dans `src/HBWalletForecast.m`. Les soldes comptables rapproche et pointe restent inchanges.
+
+- Sur un compte banque, detection par mots entiers dans le memo ou la hierarchie des categories : salaire, salaires, salary, salaries, paie, payroll. Sinon, un revenu recurrent dominant est estime : cadence de trois mois maximum, au moins 60 % des revenus recurrents normalises au mois et 50 % des depenses recurrentes normalisees, avec des depenses presentes. Cette detection est signalee comme estimee.
+- Recherche de la prochaine echeance sur 366 jours. Un salaire deja inscrit dans le futur peut aussi fixer la borne, notamment lorsque HomeBank a avance `nextdate`. La journee du prochain salaire est entierement exclue du budget automatique.
+- **Prevision a date choisie** prend la priorite sur la detection et fonctionne sur tous les comptes ouverts, epargne comprise. La date en `jj/mm/aaaa` doit etre aujourd'hui ou ulterieure ; sa journee est incluse. Desactiver l'option retablit la detection ou, en son absence, le solde des operations inscrites.
+- Solde initial, operations inscrites non annulees avant la borne et echeances restantes d'aujourd'hui a la borne sont additionnes en decimal exact. Les virements utilisent le montant propre au compte, y compris entre devises. Les limites, fins de mois et ajustements de jours suivent le moteur commun des recurrences. Les echeances en retard sont comptees et signalees mais ne sont pas ajoutees automatiquement.
+- `nextdate` reste la reference des echeances non postees : aucune deduplication approximative par date ou montant. Un curseur obsolete doit etre corrige dans HomeBank. Une erreur de recurrence, une limite de projection ou une erreur de precision masque le montant derive (`--`) au lieu d'afficher une prevision partielle.
+- Les choix sont propres a chaque compte pendant la session, conserves pendant les editions et remis a zero lors d'une ouverture explicite ou d'un nouveau chargement Drive. Ils ne sont pas ecrits dans le XML, le journal local ou Drive. Les comptes clos conservent leur solde comptable.
+
+L'interface calcule la prevision en arriere-plan sur un portefeuille immuable, avec un seul calcul actif. Une nouvelle demande remplace la demande en attente et un resultat obsolete ne remplace pas le compte affiche. Le cache, borne a 64 resultats, depend du portefeuille, du jour, du compte et de la date choisie. Une edition invalide le cache ; le changement de jour est verifie au retour dans l'application. Aucune serialisation XML n'est necessaire pour calculer la prevision. Les horizons du graphique restent independants.
+
+`tests/ForecastTests.m` couvre les calculs, bornes, virements, detections et erreurs ; `tests/ForecastApplicationTests.m` couvre les controles, le cache et les demandes concurrentes. Ils sont inclus dans `make test`. Les tests sur Mac recent ne remplacent pas la validation du compilateur, des controles et des performances dans la VM Panther.
+
+### Rapport De Solde (0.5.0)
+
+Ouvrir le bouton **Graphique**, ou **Fichier > Graphique de solde** (`Cmd+G`). La fenetre commence sur le compte selectionne, avec un filtre pour les comptes banque, l'epargne ou chaque compte ouvert. Si plusieurs devises sont presentes, le selecteur **Devise** les separe, sans conversion ni addition entre devises.
+
+- Une seule courbe : solde initial plus operations inscrites non annulees jusqu'a chaque date, sans couches par categorie. Le solde rapproche de la fenetre principale reste inchange.
+- Previsions : echeances futures du moteur commun a l'echeancier, a compter de demain ; operations deja inscrites a venir conservees. `nextdate` determine les echeances non postees. Aucune deduplication heuristique par date/montant : un `nextdate` obsolete doit etre corrige dans HomeBank. Aucun ajout d'operation ni ecriture de fichier par le graphique.
+- Horizons bornes : 3, 12 ou 60 mois depuis aujourd'hui, avec ajustement des fins de mois et limite annee 9999. Les mouvements apres l'horizon ne sont pas affiches. Les limites de recurrence existantes (10 000 iterations par modele / 50 000 au total) restent actives ; les projections incompletes sont signalees.
+- Navigation : periodes historiques 1/3 mois, 1/5 ans, **Tout** incluant l'horizon et **Previsions**. Champs **Du/Au** en JJ/MM/AAAA, boutons `+` / `-`, fleches, selection d'une plage par glissement. La molette deplace la periode ; `Option+molette` zoome. Cliquer dans le graphique permet ensuite d'inspecter les dates au survol. La resolution minimale est une journee.
+- Rendu : AppKit `NSBezierPath`, ligne bleue en escalier, remplissage jusqu'a zero, futur en pointilles plus leger, repere aujourd'hui. Le seuil de decouvert `minimum` est normalise en valeur negative (zero sans autorisation), visible uniquement en vue individuelle et toujours inclus dans l'axe. Les vues groupees n'inventent pas de seuil commun.
+- Calcul : `HBBalanceHistory` utilise les structures de travail en memoire. Les soldes restent en `NSDecimalNumber` avec controle des erreurs arithmetiques ; les doubles ne servent qu'aux coordonnees du dessin. Le survol et le solde final utilisent la valeur decimale exacte, sans approximation issue des points reduits.
+- Performance : un seul calcul en arriere-plan a la fois sur un portefeuille immuable. Les demandes plus recentes remplacent les resultats anciens. Une fenetre masquee reporte son recalcul jusqu'a la prochaine ouverture. Le zoom ne regenere pas les recurrences : echantillonnage borne a 2 400 points maximum, conservant minimum/maximum/dernier solde par intervalle et la jonction d'aujourd'hui. Le dessin statique est mis en cache dans une image ; le survol ne refait pas tout le trace.
+
+Fichiers : `src/HBBalanceHistory.*` (calcul), `src/HBBalanceView.*` (trace), `src/HBBalanceWindow.*` (controles / worker). Aucun moteur web, JavaScript, Core Animation ou nouvelle dependance externe n'est ajoute a l'application PPC.
+
+Tests dedies, possibles sans construire le kit HTTPS :
+
+```sh
+make graph-test
+```
+
+`make test` les execute aussi. `tests/BalanceHistoryTests.m` couvre statuts, devises, transferts, limites, dates, precision et echantillonnage ; `tests/BalanceViewTests.m` couvre rendu bleu/rouge, fenetre minimale, zoom, dates invalides, demandes asynchrones et rafraichissement differe. Les captures `build/balance-plot-*.png` utilisent uniquement un portefeuille fictif. La variante moderne des tests inspecte aussi les themes clair/sombre ; Panther utilise son apparence Cocoa native. Le binaire de test accepte `--preview` pour ouvrir le portefeuille fictif pendant deux minutes.
+
+La compilation et les tests sur Apple Silicon ne certifient pas le GCC 3.3, le SDK ni les performances PPC. Apres extraction de la nouvelle archive dans la VM, reconstruire avec le kit HTTPS deja valide puis tester aussi le graphique sur une copie fictive avant les donnees reelles.
 
 ### Modele Metier Et Journal Local (0.4.0)
 
@@ -122,7 +163,7 @@ Depuis la racine du projet `homebank-panther` :
 make source-package
 ```
 
-L'archive `build/HomeBankPanther-0.4.0-sources.tar.gz` contient le code, les licences, la documentation et les donnees fictives. Elle ne contient aucun portefeuille utilisateur ni cle Google de production. La cle RSA dans `tests/fixtures/drive-rsa-test-key.txt` est une cle de test volontairement publique, jamais utilisable en production.
+L'archive `build/HomeBankPanther-0.6.0-sources.tar.gz` contient le code, les licences, la documentation et les donnees fictives. Elle ne contient aucun portefeuille utilisateur ni cle Google de production. La cle RSA dans `tests/fixtures/drive-rsa-test-key.txt` est une cle de test volontairement publique, jamais utilisable en production.
 
 ## Validation Sur Un Mac Moderne
 

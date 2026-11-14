@@ -14,7 +14,7 @@ else
 XML_CFLAGS ?= -I$(shell xcrun --show-sdk-path)/usr/include/libxml2
 endif
 APP = build/$(ARCH)/HomeBankPanther.app
-VERSION = 0.4.0
+VERSION = 0.6.0
 HTTPS_PREFIX ?= $(HOME)/homebank-https-sources/out/$(ARCH)
 DRIVE_CFLAGS = -I$(HTTPS_PREFIX)/include -Ivendor/cjson -DCJSON_NESTING_LIMIT=64
 DRIVE_LIBS = $(HTTPS_PREFIX)/lib/libwolfssl.a -framework Security
@@ -22,11 +22,13 @@ DRIVE_SOURCES = src/HBDrive.m src/HBJournal.m
 C_SOURCES = src/HBXML.c vendor/cjson/cJSON.c
 XML_OBJECT = build/$(ARCH)/HBXML.o
 CJSON_OBJECT = build/$(ARCH)/cJSON.o
-WALLET_SOURCES = src/HBWallet.m src/HBWalletStore.m src/HBWalletEditing.m src/HBWalletCalendar.m
-SOURCES = src/main.m src/HBApplication.m src/HBOperationEditor.m src/HBCalendarWindow.m src/HBDrivePanel.m $(WALLET_SOURCES) $(DRIVE_SOURCES)
+WALLET_SOURCES = src/HBWallet.m src/HBWalletStore.m src/HBWalletEditing.m src/HBWalletCalendar.m src/HBWalletForecast.m src/HBBalanceHistory.m
+GRAPH_SOURCES = src/HBBalanceView.m src/HBBalanceWindow.m
+SOURCES = src/main.m src/HBApplication.m src/HBOperationEditor.m src/HBCalendarWindow.m src/HBDrivePanel.m $(GRAPH_SOURCES) $(WALLET_SOURCES) $(DRIVE_SOURCES)
 HEADERS = $(wildcard src/*.h)
+USER_GUIDE_FILES = GUIDE_UTILISATEUR.md docs/screenshots/panther/README.md $(wildcard docs/screenshots/panther/*.png)
 
-.PHONY: all test benchmark package source-package clean drive-check drive-tools-prepare drive-resources original-compat-test mixed-xml-test
+.PHONY: all test graph-test benchmark package source-package clean drive-check drive-tools-prepare drive-resources original-compat-test mixed-xml-test
 all: $(APP)/Contents/MacOS/HomeBankPanther drive-resources
 
 $(XML_OBJECT): src/HBXML.c src/HBXML.h
@@ -52,7 +54,7 @@ drive-resources: $(APP)/Contents/MacOS/HomeBankPanther
 	cp resources/licenses/* $(APP)/Contents/Resources/Licenses/
 	cp vendor/cjson/LICENSE $(APP)/Contents/Resources/Licenses/CJSON-LICENSE.txt
 
-TEST_SOURCES = tests/WalletTests.m tests/EditingTests.m tests/CalendarTests.m tests/PantherString.m
+TEST_SOURCES = tests/WalletTests.m tests/EditingTests.m tests/CalendarTests.m tests/ForecastTests.m tests/BalanceHistoryTests.m tests/PantherString.m
 build/$(ARCH)/wallet-tests: $(TEST_SOURCES) tests/PantherString.h $(WALLET_SOURCES) src/HBWallet.h $(XML_OBJECT)
 	mkdir -p build/$(ARCH)
 	MACOSX_DEPLOYMENT_TARGET=$(DEPLOYMENT_TARGET) $(CC) -arch $(ARCH) $(TARGETFLAGS) $(OBJCFLAGS) $(OBJC_EXCEPTION_FLAGS) $(XML_CFLAGS) -Isrc -framework Foundation $(WALLET_SOURCES) $(TEST_SOURCES) $(XML_OBJECT) $(XML_LIBS) -o $@
@@ -64,6 +66,10 @@ build/$(ARCH)/drive-tests: tests/DriveTests.m tests/PantherString.m tests/Panthe
 build/$(ARCH)/drive-application-tests: tests/DriveApplicationTests.m $(filter-out src/main.m,$(SOURCES)) $(HEADERS) $(XML_OBJECT) $(CJSON_OBJECT) $(HTTPS_PREFIX)/lib/libwolfssl.a $(HTTPS_PREFIX)/include/wolfssl/options.h
 	mkdir -p build/$(ARCH)
 	MACOSX_DEPLOYMENT_TARGET=$(DEPLOYMENT_TARGET) $(CC) -arch $(ARCH) $(TARGETFLAGS) $(OBJCFLAGS) $(OBJC_EXCEPTION_FLAGS) $(XML_CFLAGS) $(DRIVE_CFLAGS) -Isrc -framework Cocoa $(filter-out src/main.m,$(SOURCES)) tests/DriveApplicationTests.m $(XML_OBJECT) $(CJSON_OBJECT) $(XML_LIBS) $(DRIVE_LIBS) -o $@
+
+build/$(ARCH)/forecast-application-tests: tests/ForecastApplicationTests.m $(filter-out src/main.m,$(SOURCES)) $(HEADERS) $(XML_OBJECT) $(CJSON_OBJECT) $(HTTPS_PREFIX)/lib/libwolfssl.a $(HTTPS_PREFIX)/include/wolfssl/options.h
+	mkdir -p build/$(ARCH)
+	MACOSX_DEPLOYMENT_TARGET=$(DEPLOYMENT_TARGET) $(CC) -arch $(ARCH) $(TARGETFLAGS) $(OBJCFLAGS) $(OBJC_EXCEPTION_FLAGS) $(XML_CFLAGS) $(DRIVE_CFLAGS) -Isrc -framework Cocoa $(filter-out src/main.m,$(SOURCES)) tests/ForecastApplicationTests.m $(XML_OBJECT) $(CJSON_OBJECT) $(XML_LIBS) $(DRIVE_LIBS) -o $@
 
 build/$(ARCH)/xml-tests: tests/XMLTests.c $(XML_OBJECT) src/HBXML.h
 	mkdir -p build/$(ARCH)
@@ -80,12 +86,22 @@ build/$(ARCH)/journal-tests: tests/JournalTests.m $(WALLET_SOURCES) $(DRIVE_SOUR
 	mkdir -p build/$(ARCH)
 	MACOSX_DEPLOYMENT_TARGET=$(DEPLOYMENT_TARGET) $(CC) -arch $(ARCH) $(TARGETFLAGS) $(OBJCFLAGS) $(OBJC_EXCEPTION_FLAGS) $(XML_CFLAGS) $(DRIVE_CFLAGS) -Isrc -framework Foundation $(WALLET_SOURCES) $(DRIVE_SOURCES) tests/JournalTests.m $(XML_OBJECT) $(CJSON_OBJECT) $(XML_LIBS) $(DRIVE_LIBS) -o $@
 
-test: build/$(ARCH)/wallet-tests build/$(ARCH)/drive-tests build/$(ARCH)/drive-application-tests build/$(ARCH)/xml-tests build/$(ARCH)/journal-tests
+build/$(ARCH)/graph-tests: tests/BalanceViewTests.m $(GRAPH_SOURCES) $(WALLET_SOURCES) $(HEADERS) $(XML_OBJECT)
+	mkdir -p build/$(ARCH)
+	MACOSX_DEPLOYMENT_TARGET=$(DEPLOYMENT_TARGET) $(CC) -arch $(ARCH) $(TARGETFLAGS) $(OBJCFLAGS) $(OBJC_EXCEPTION_FLAGS) $(XML_CFLAGS) -Isrc -framework Cocoa $(WALLET_SOURCES) $(GRAPH_SOURCES) tests/BalanceViewTests.m $(XML_OBJECT) $(XML_LIBS) -o $@
+
+graph-test: build/$(ARCH)/wallet-tests build/$(ARCH)/graph-tests
+	./build/$(ARCH)/wallet-tests tests/demo.xhb
+	./build/$(ARCH)/graph-tests
+
+test: build/$(ARCH)/wallet-tests build/$(ARCH)/drive-tests build/$(ARCH)/drive-application-tests build/$(ARCH)/forecast-application-tests build/$(ARCH)/xml-tests build/$(ARCH)/journal-tests build/$(ARCH)/graph-tests
 	./build/$(ARCH)/wallet-tests tests/demo.xhb
 	./build/$(ARCH)/drive-tests
 	./build/$(ARCH)/drive-application-tests
+	./build/$(ARCH)/forecast-application-tests
 	./build/$(ARCH)/xml-tests
 	./build/$(ARCH)/journal-tests
+	./build/$(ARCH)/graph-tests
 	/bin/sh tests/HttpsCheckTests.sh
 	/bin/sh tests/HttpsBuildTests.sh
 
@@ -117,7 +133,7 @@ package: all test
 
 source-package:
 	mkdir -p build
-	COPYFILE_DISABLE=1 tar --format=ustar -czf build/HomeBankPanther-$(VERSION)-sources.tar.gz Makefile README.md README_TECHNIQUE.md HTTPS_BUILD.md DRIVE_SETUP.md $(SOURCES) $(C_SOURCES) $(HEADERS) $(TEST_SOURCES) tests/PantherString.h tests/DriveTests.m tests/DriveApplicationTests.m tests/PerformanceTests.m tests/JournalTests.m tests/XMLTests.c tests/OriginalHomeBankProbe.c tests/demo.xhb tests/HttpsCheckTests.sh tests/HttpsBuildTests.sh tests/fixtures/curl-diagnostic.sh tests/fixtures/https-build-placeholder.txt tests/fixtures/https-build-tool.sh tests/fixtures/drive-curl.sh tests/fixtures/drive-rsa-test-key.txt tests/fixtures/DRIVE_TEST_KEYS.md resources/Info.plist resources/licenses/WOLFSSL-COPYING.txt resources/licenses/CURL-COPYING.txt scripts/https-sources.json scripts/prepare-drive-https.mjs scripts/check-curl-timeval.c scripts/build-drive-https.sh scripts/check-architecture.sh scripts/check-drive-https.sh vendor/cjson/cJSON.h vendor/cjson/LICENSE vendor/cjson/README.md
+	COPYFILE_DISABLE=1 tar --format=ustar -czf build/HomeBankPanther-$(VERSION)-sources.tar.gz Makefile README.md README_TECHNIQUE.md $(USER_GUIDE_FILES) HTTPS_BUILD.md DRIVE_SETUP.md docs/screenshots/balance-plot.png $(SOURCES) $(C_SOURCES) $(HEADERS) $(TEST_SOURCES) tests/ForecastApplicationTests.m tests/BalanceViewTests.m tests/PantherString.h tests/DriveTests.m tests/DriveApplicationTests.m tests/PerformanceTests.m tests/JournalTests.m tests/XMLTests.c tests/OriginalHomeBankProbe.c tests/demo.xhb tests/HttpsCheckTests.sh tests/HttpsBuildTests.sh tests/fixtures/curl-diagnostic.sh tests/fixtures/https-build-placeholder.txt tests/fixtures/https-build-tool.sh tests/fixtures/drive-curl.sh tests/fixtures/drive-rsa-test-key.txt tests/fixtures/DRIVE_TEST_KEYS.md resources/Info.plist resources/licenses/WOLFSSL-COPYING.txt resources/licenses/CURL-COPYING.txt scripts/https-sources.json scripts/prepare-drive-https.mjs scripts/check-curl-timeval.c scripts/build-drive-https.sh scripts/check-architecture.sh scripts/check-drive-https.sh vendor/cjson/cJSON.h vendor/cjson/LICENSE vendor/cjson/README.md
 
 drive-check:
 	/bin/sh scripts/check-drive-https.sh

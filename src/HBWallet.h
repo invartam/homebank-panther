@@ -50,6 +50,7 @@ typedef int HBIndex;
 - (NSArray *)categories;
 - (NSDictionary *)accountWithKey:(NSString *)key;
 - (NSString *)currencyKeyForAccount:(NSDictionary *)account;
+- (NSString *)currencyNameForAccount:(NSDictionary *)account;
 - (unsigned int)fractionDigitsForAccount:(NSDictionary *)account;
 @end
 
@@ -65,6 +66,12 @@ typedef int HBIndex;
 - (NSArray *)calendarEntriesFrom:(int)start to:(int)end today:(int)today account:(NSString *)accountKey includeClosed:(BOOL)includeClosed issues:(NSArray **)issues;
 - (NSArray *)recurringEntriesForAccount:(NSString *)accountKey includeClosed:(BOOL)includeClosed issues:(NSArray **)issues;
 - (NSArray *)totalsForEntries:(NSArray *)entries;
+- (NSArray *)plannedEntriesFrom:(int)start to:(int)end account:(NSString *)key templates:(NSArray *)templates issues:(NSArray **)issues overdue:(unsigned int *)overdue;
+@end
+
+@interface HBWallet (Forecast)
+/* Display-only budget: manual date inclusive, automatic salary date exclusive. */
+- (NSDictionary *)futureForecastForAccount:(NSDictionary *)account today:(int)today manual:(BOOL)manual until:(int)until;
 @end
 
 NSCalendarDate *HBDateFromOrdinal(int ordinal);

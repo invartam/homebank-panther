@@ -29,6 +29,13 @@
 - (void)syncDrive:(id)sender;
 - (void)reloadDrive:(id)sender;
 - (void)configureDrive:(id)sender;
+- (void)buildForecastControlsInView:(NSView *)view;
+- (void)refreshForecast;
+- (void)displayForecast:(NSDictionary *)forecast;
+- (void)manualForecastChanged:(id)sender;
+- (void)launchForecast:(NSDictionary *)context;
+- (void)forecastWorker:(NSDictionary *)context;
+- (void)forecastFinished:(NSDictionary *)context;
 - (void)startDriveAction:(NSString *)action manual:(BOOL)manual;
 @end
 
@@ -161,6 +168,8 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     [_saveButton setToolTip:@"Confirmer les modifications dans le journal local"];
     _exportButton = HBButton(view, @"Exporter...", self, @selector(exportFile:));
     _calendarButton = HBButton(view, @"Planifications", self, @selector(showCalendar:));
+    _graphButton = HBButton(view, @"Graphique", self, @selector(showBalance:));
+    [_graphButton setToolTip:@"Rapport de solde et previsions"];
     _driveButton = HBButton(view, @"Google Drive", self, @selector(openDrive:));
     _syncButton = HBButton(view, @"Synchroniser", self, @selector(syncDrive:));
     [_syncButton setToolTip:@"Envoyer les modifications locales, ou charger Drive si aucune modification n'est en attente"];
@@ -190,6 +199,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
         [_balanceTitles addObject:HBLabel(view, [titles objectAtIndex:i], 12)];
         [_balanceLabels addObject:HBLabel(view, @"", 19)];
     }
+    [self buildForecastControlsInView:view];
     _previous = HBButton(view, @"<", self, @selector(previousPage:)); [_previous setToolTip:@"Page precedente"];
     _next = HBButton(view, @">", self, @selector(nextPage:)); [_next setToolTip:@"Page suivante"];
     _pageLabel = HBLabel(view, @"", 12); _statusLabel = HBLabel(view, @"Aucun fichier ouvert", 12);
@@ -210,6 +220,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     HBMenuCommand(fileMenu, @"Reparer la compatibilite HomeBank...", @selector(repairHomeBank:), @"", self);
     HBMenuCommand(fileMenu, @"Nouvelle operation", @selector(newRecord:), @"n", self);
     HBMenuCommand(fileMenu, @"Planifications", @selector(showCalendar:), @"p", self);
+    HBMenuCommand(fileMenu, @"Graphique de solde", @selector(showBalance:), @"g", self);
     editMenu = [[[NSMenu alloc] initWithTitle:@"Edition"] autorelease];
     item = [[[NSMenuItem alloc] initWithTitle:@"Edition" action:NULL keyEquivalent:@""] autorelease]; [item setSubmenu:editMenu]; [menu addItem:item];
     [editMenu addItemWithTitle:@"Couper" action:@selector(cut:) keyEquivalent:@"x"];
@@ -230,17 +241,132 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     NSDictionary *settings = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"HBPantherDrive"];
     if (settings) { _driveSettings = [settings copy]; _drive = [[HBDriveClient alloc] initWithSettings:settings transport:nil credentials:nil]; [_driveLabel setStringValue:@"Drive : configure, non ouvert"]; }
 }
+- (void)buildForecastControlsInView:(NSView *)view {
+    _manualForecasts = [[NSMutableDictionary alloc] init]; _forecastCache = [[NSMutableDictionary alloc] init];
+    _forecastToggle = [[[NSButton alloc] initWithFrame:NSZeroRect] autorelease];
+    [_forecastToggle setButtonType:NSSwitchButton]; [_forecastToggle setTitle:@"Prevision a date choisie"];
+    [_forecastToggle setFont:[NSFont systemFontOfSize:12]];
+    [_forecastToggle setTarget:self]; [_forecastToggle setAction:@selector(manualForecastChanged:)];
+    [_forecastToggle setToolTip:@"Remplacer la borne du prochain salaire par une date incluse dans le calcul"];
+    [view addSubview:_forecastToggle];
+    _forecastDate = [[[NSTextField alloc] initWithFrame:NSZeroRect] autorelease];
+    [_forecastDate setFont:[NSFont systemFontOfSize:12]]; [_forecastDate setDelegate:(id)self];
+    [_forecastDate setTarget:self]; [_forecastDate setAction:@selector(manualForecastChanged:)];
+    [_forecastDate setToolTip:@"Date incluse dans la prevision : jj/mm/aaaa, a partir d'aujourd'hui"];
+    [view addSubview:_forecastDate];
+    _forecastDateHint = HBLabel(view, @"jj/mm/aaaa", 11);
+    _forecastNote = HBLabel(view, @"", 11);
+    [_forecastToggle setEnabled:NO]; [_forecastDate setHidden:YES]; [_forecastDateHint setHidden:YES];
+}
+- (void)displayForecast:(NSDictionary *)forecast {
+    [_forecastResult release]; _forecastResult = [forecast retain];
+    NSDictionary *account = [self selectedAccount];
+    if (!account || [_balanceLabels count] < 3) return;
+    NSTextField *field = [_balanceLabels objectAtIndex:2];
+    BOOL available = [[forecast objectForKey:@"available"] boolValue];
+    if (available) {
+        [field setStringValue:[_wallet formatAmount:[forecast objectForKey:@"future"] account:account]];
+        [field setTextColor:HBBalanceColor([forecast objectForKey:@"future"], account)];
+    } else { [field setStringValue:@"--"]; [field setTextColor:[NSColor disabledControlTextColor]]; }
+    NSString *kind = [forecast objectForKey:@"kind"];
+    NSMutableString *note = [NSMutableString stringWithString:available ? @"Operations inscrites" : @"Prevision indisponible"];
+    if (available && ([kind isEqualToString:@"salary"] || [kind isEqualToString:@"manual"])) {
+        [note setString:[NSString stringWithFormat:@"%@ %@", [kind isEqualToString:@"manual"] ? @"Au" : @"Avant le",
+            [HBDateFromOrdinal([[forecast objectForKey:@"until"] intValue]) descriptionWithCalendarFormat:@"%d/%m/%Y"]]];
+        if ([[forecast objectForKey:@"estimated"] boolValue]) [note appendString:@" - revenu estime"];
+    }
+    if ([[forecast objectForKey:@"overdue"] intValue] > 0) [note appendString:@" - echeances en retard exclues"];
+    NSArray *issues = [forecast objectForKey:@"issues"];
+    if (!available && [issues count]) [note appendFormat:@" : %@", [issues objectAtIndex:0]];
+    [_forecastNote setStringValue:note];
+    [_forecastNote setToolTip:[issues count] ? [issues componentsJoinedByString:@"\n"] : [forecast objectForKey:@"label"]];
+}
+- (void)refreshForecast {
+    if (!_forecastNote) return;
+    _forecastRequest++;
+    [_forecastPending release]; _forecastPending = nil;
+    NSDictionary *account = [self selectedAccount];
+    NSString *key = [account objectForKey:@"key"];
+    BOOL eligible = account != nil && !([[account objectForKey:@"flags"] intValue] & 2);
+    [_forecastControlAccountKey release]; _forecastControlAccountKey = [key copy];
+    [_forecastToggle setEnabled:eligible];
+    int today = HBOrdinalFromDate(HBToday());
+    if (_forecastWallet != _wallet || _forecastToday != today) {
+        [_forecastCache removeAllObjects]; [_forecastWallet release]; _forecastWallet = [_wallet retain]; _forecastToday = today;
+    }
+    NSDictionary *setting = key ? [_manualForecasts objectForKey:key] : nil;
+    BOOL manual = eligible && [[setting objectForKey:@"enabled"] boolValue];
+    int until = setting ? [[setting objectForKey:@"until"] intValue] : MIN(3652059, today + 30);
+    NSString *input = [setting objectForKey:@"input"];
+    if (!input) input = [HBDateFromOrdinal(MAX(1, until)) descriptionWithCalendarFormat:@"%d/%m/%Y"];
+    [_forecastToggle setState:manual ? NSOnState : NSOffState];
+    [_forecastDate setStringValue:input]; [_forecastDate setEnabled:manual];
+    [_forecastDate setHidden:!manual]; [_forecastDateHint setHidden:!manual];
+    [_forecastResult release]; _forecastResult = nil;
+    if (!eligible) { [_forecastNote setStringValue:@""]; [_forecastNote setToolTip:nil]; return; }
+    if (manual && (until < today || until > 3652059)) {
+        [self displayForecast:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:NO], @"available",
+            [NSArray arrayWithObject:@"Choisir une date valide a partir d'aujourd'hui (jj/mm/aaaa)."], @"issues", nil]]; return;
+    }
+    NSString *cacheKey = [NSString stringWithFormat:@"%@:%d:%d:%d", key, today, manual, manual ? until : 0];
+    NSDictionary *cached = [_forecastCache objectForKey:cacheKey];
+    if (cached) { [self displayForecast:cached]; return; }
+    [[_balanceLabels objectAtIndex:2] setStringValue:@"..."]; [_forecastNote setStringValue:@"Calcul de la prevision..."]; [_forecastNote setToolTip:nil];
+    NSDictionary *context = [NSDictionary dictionaryWithObjectsAndKeys:_wallet, @"wallet", key, @"account", cacheKey, @"cacheKey",
+        [NSNumber numberWithUnsignedInt:_forecastRequest], @"request", [NSNumber numberWithInt:today], @"today",
+        [NSNumber numberWithBool:manual], @"manual", [NSNumber numberWithInt:until], @"until", nil];
+    if (_forecastBusy) _forecastPending = [context retain]; else [self launchForecast:context];
+}
+- (void)manualForecastChanged:(id)sender {
+    NSDictionary *account = [self selectedAccount]; NSString *key = [account objectForKey:@"key"];
+    if (!key || ![key isEqualToString:_forecastControlAccountKey] || ([[account objectForKey:@"flags"] intValue] & 2)) return;
+    NSString *input = [_forecastDate stringValue];
+    [_manualForecasts setObject:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:[_forecastToggle state] == NSOnState], @"enabled",
+        [NSNumber numberWithInt:HBOrdinalFromFrenchDate(input)], @"until", input, @"input", nil] forKey:key];
+    [self refreshForecast];
+}
+- (void)launchForecast:(NSDictionary *)context {
+    _forecastBusy = YES;
+    [NSThread detachNewThreadSelector:@selector(forecastWorker:) toTarget:self withObject:context];
+}
+- (void)forecastWorker:(NSDictionary *)context {
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    NSMutableDictionary *completed = [NSMutableDictionary dictionaryWithDictionary:context]; NSDictionary *forecast;
+    @try {
+        HBWallet *wallet = [context objectForKey:@"wallet"];
+        forecast = [wallet futureForecastForAccount:[wallet accountWithKey:[context objectForKey:@"account"]]
+            today:[[context objectForKey:@"today"] intValue] manual:[[context objectForKey:@"manual"] boolValue] until:[[context objectForKey:@"until"] intValue]];
+    } @catch (NSException *exception) {
+        forecast = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:NO], @"available", [NSArray arrayWithObject:@"Calcul de prevision impossible."], @"issues", nil];
+    }
+    if (forecast) [completed setObject:forecast forKey:@"forecast"];
+    [self performSelectorOnMainThread:@selector(forecastFinished:) withObject:completed waitUntilDone:NO];
+    [pool release];
+}
+- (void)forecastFinished:(NSDictionary *)context {
+    _forecastBusy = NO;
+    BOOL currentDay = [[context objectForKey:@"today"] intValue] == HBOrdinalFromDate(HBToday());
+    NSDictionary *forecast = [context objectForKey:@"forecast"];
+    if (currentDay && [context objectForKey:@"wallet"] == _forecastWallet && forecast) {
+        if ([_forecastCache count] >= 64) [_forecastCache removeAllObjects];
+        [_forecastCache setObject:forecast forKey:[context objectForKey:@"cacheKey"]];
+        if ([[context objectForKey:@"request"] unsignedIntValue] == _forecastRequest) [self displayForecast:forecast];
+    }
+    NSDictionary *pending = _forecastPending; _forecastPending = nil;
+    if (pending) { [self launchForecast:pending]; [pending release]; }
+    else if (!currentDay && [[context objectForKey:@"request"] unsignedIntValue] == _forecastRequest) [self refreshForecast];
+}
 - (void)layout {
     NSRect bounds = [[_window contentView] bounds];
     float h = bounds.size.height, w = bounds.size.width, right = w - 288;
     unsigned int i;
     [_ownerLabel setFrame:NSMakeRect(12, h - 34, w - 340, 24)];
     [_driveLabel setFrame:NSMakeRect(w - 320, h - 31, 308, 21)];
-    [_openButton setFrame:NSMakeRect(12, h - 72, 145, 28)];
-    [_newButton setFrame:NSMakeRect(169, h - 72, 110, 28)]; [_editButton setFrame:NSMakeRect(291, h - 72, 90, 28)];
-    [_saveButton setFrame:NSMakeRect(393, h - 72, 110, 28)]; [_exportButton setFrame:NSMakeRect(515, h - 72, 110, 28)];
-    [_calendarButton setFrame:NSMakeRect(637, h - 72, 130, 28)];
-    [_driveButton setFrame:NSMakeRect(775, h - 72, 113, 28)];
+    [_openButton setFrame:NSMakeRect(12, h - 72, 135, 28)];
+    [_newButton setFrame:NSMakeRect(157, h - 72, 94, 28)]; [_editButton setFrame:NSMakeRect(261, h - 72, 76, 28)];
+    [_saveButton setFrame:NSMakeRect(347, h - 72, 98, 28)]; [_exportButton setFrame:NSMakeRect(455, h - 72, 94, 28)];
+    [_calendarButton setFrame:NSMakeRect(559, h - 72, 122, 28)]; [_graphButton setFrame:NSMakeRect(691, h - 72, 90, 28)];
+    [_driveButton setFrame:NSMakeRect(791, h - 72, 97, 28)];
     [_syncButton setFrame:NSMakeRect(w - 142, 50, 130, 28)];
     [_group setFrame:NSMakeRect(12, h - 112, 260, 26)];
     [_accountsScroll setFrame:NSMakeRect(12, 86, 260, h - 208)];
@@ -251,7 +377,11 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
         [[_balanceTitles objectAtIndex:i] setFrame:NSMakeRect(x, h - 138, right / 3 - 12, 19)];
         [[_balanceLabels objectAtIndex:i] setFrame:NSMakeRect(x, h - 166, right / 3 - 12, 27)];
     }
-    [_recordsScroll setFrame:NSMakeRect(288, 86, right - 12, h - 262)];
+    [_forecastNote setFrame:NSMakeRect(288, h - 186, right - 12, 18)];
+    [_forecastToggle setFrame:NSMakeRect(288, h - 216, 230, 24)];
+    [_forecastDate setFrame:NSMakeRect(524, h - 214, 110, 22)];
+    [_forecastDateHint setFrame:NSMakeRect(642, h - 214, 100, 20)];
+    [_recordsScroll setFrame:NSMakeRect(288, 86, right - 12, h - 310)];
     [_pointButton setFrame:NSMakeRect(288, 50, 120, 28)]; [_reconcileButton setFrame:NSMakeRect(420, 50, 150, 28)];
     [_deleteButton setFrame:NSMakeRect(582, 50, 110, 28)];
     [_previous setFrame:NSMakeRect(288, 16, 34, 28)]; [_next setFrame:NSMakeRect(328, 16, 34, 28)];
@@ -259,6 +389,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     [_statusLabel setFrame:NSMakeRect(12, 16, 260, 56)];
 }
 - (void)applicationDidFinishLaunching:(NSNotification *)notification { [self buildInterface]; [self performSelector:@selector(restoreDrive:) withObject:nil afterDelay:0.5]; }
+- (void)applicationDidBecomeActive:(NSNotification *)notification { [self refreshForecast]; }
 - (void)windowDidResize:(NSNotification *)notification { [self layout]; }
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)application { return YES; }
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)application { return [NSApp modalWindow] == nil && !_driveBusy && [self mayDiscard] ? NSTerminateNow : NSTerminateCancel; }
@@ -284,6 +415,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
         return NO;
     }
     [wallet retain]; [_wallet release]; _wallet = wallet;
+    [_manualForecasts removeAllObjects];
     [_path release]; _path = [path copy];
     [_savedData release]; _savedData = [[wallet baseSourceData] copy]; _dirty = NO;
     [_savedWallet release]; _savedWallet = [wallet retain]; [_journalState release]; _journalState = [journal copy];
@@ -292,7 +424,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     if (_drive) [_driveLabel setStringValue:@"Drive : inactif pour ce fichier local"];
     [_search setStringValue:@""];
     [_ownerLabel setStringValue:[wallet owner]];
-    [self updateDocumentState]; if (_calendar) [_calendar setWallet:_wallet];
+    [self updateDocumentState]; if (_calendar) [_calendar setWallet:_wallet]; if (_balanceWindow) [_balanceWindow setWallet:_wallet];
     [self filterAccounts:nil]; [_window makeKeyAndOrderFront:nil]; return YES;
 }
 - (NSDictionary *)selectedAccount {
@@ -335,6 +467,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
         [label setStringValue:balance ? [_wallet formatAmount:balance account:account] : @""];
         if (balance) [label setTextColor:HBBalanceColor(balance, account)];
     }
+    [self refreshForecast];
     [self filterRecords];
 }
 - (void)tableViewSelectionDidChange:(NSNotification *)notification {
@@ -350,7 +483,10 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     [_pageLabel setStringValue:[NSString stringWithFormat:@"%u-%u / %u operations", total ? start + 1 : 0, end, total]];
     [self updateButtons];
 }
-- (void)controlTextDidChange:(NSNotification *)notification { if ([notification object] == _search) [self filterRecords]; }
+- (void)controlTextDidChange:(NSNotification *)notification {
+    if ([notification object] == _search) [self filterRecords];
+    else if ([notification object] == _forecastDate) [self manualForecastChanged:_forecastDate];
+}
 - (void)filterRecords {
     NSDictionary *account = [self selectedAccount];
     NSArray *records = [_wallet recordsForAccount:account]; NSMutableArray *filtered = nil;
@@ -375,7 +511,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     [_pointButton setEnabled:record != nil && [[record objectForKey:@"st"] intValue] != 2]; [_reconcileButton setEnabled:record != nil];
     [_pointButton setTitle:[[record objectForKey:@"st"] intValue] == 1 ? @"Depointer" : @"Pointer"];
     [_reconcileButton setTitle:[[record objectForKey:@"st"] intValue] == 2 ? @"Derapprocher" : @"Rapprocher"];
-    [_saveButton setEnabled:_dirty && !_saveBusy]; [_exportButton setEnabled:_wallet != nil && !_saveBusy && !_saveTimer && !_syncRequested && !_driveBusy]; [_calendarButton setEnabled:_wallet != nil];
+    [_saveButton setEnabled:_dirty && !_saveBusy]; [_exportButton setEnabled:_wallet != nil && !_saveBusy && !_saveTimer && !_syncRequested && !_driveBusy]; [_calendarButton setEnabled:_wallet != nil]; [_graphButton setEnabled:_wallet != nil];
     [_syncButton setEnabled:_driveActive && !_driveBusy && !_syncRequested];
     if (_driveBusy) {
         [_newButton setEnabled:NO]; [_editButton setEnabled:NO]; [_deleteButton setEnabled:NO]; [_pointButton setEnabled:NO]; [_reconcileButton setEnabled:NO]; [_saveButton setEnabled:NO]; [_openButton setEnabled:NO]; [_driveButton setEnabled:NO];
@@ -409,7 +545,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
         if (_page != page) { _page = page; [self refreshRecords]; }
         [_recordsTable selectRow:i % HB_PAGE_SIZE byExtendingSelection:NO]; [_recordsTable scrollRowToVisible:i % HB_PAGE_SIZE]; break;
     }
-    [recordIndex release]; [self updateDocumentState]; if (_calendar) [_calendar setWallet:_wallet];
+    [recordIndex release]; [self updateDocumentState]; if (_calendar) [_calendar setWallet:_wallet]; if (_balanceWindow) [_balanceWindow setWallet:_wallet];
     if (_dirty) [self queueLocalSave];
 }
 - (void)edit:(NSDictionary *)record {
@@ -503,7 +639,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     [_savedHash release]; _savedHash = [HBDriveSHA256(_savedData) copy];
     [_journalState release]; _journalState = [[NSDictionary dictionaryWithObjectsAndKeys:@"0", @"count", @"0", @"length", nil] retain];
     _dirty = NO; [_saveError release]; _saveError = nil;
-    if (_calendar) [_calendar setWallet:wallet]; [_ownerLabel setStringValue:[wallet owner]]; [self filterAccounts:nil]; [self updateDocumentState];
+    if (_calendar) [_calendar setWallet:wallet]; if (_balanceWindow) [_balanceWindow setWallet:wallet]; [_ownerLabel setStringValue:[wallet owner]]; [self filterAccounts:nil]; [self updateDocumentState];
 }
 - (void)repairHomeBank:(id)sender {
     if (!_wallet || _driveBusy || [NSApp modalWindow]) return;
@@ -530,10 +666,15 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     if (!_calendar) _calendar = [[HBCalendarWindow alloc] initWithWallet:_wallet account:[[self selectedAccount] objectForKey:@"key"]];
     [_calendar show];
 }
+- (void)showBalance:(id)sender {
+    if (!_wallet || [NSApp modalWindow]) return;
+    if (!_balanceWindow) _balanceWindow = [[HBBalanceWindow alloc] initWithWallet:_wallet account:[[self selectedAccount] objectForKey:@"key"]];
+    [_balanceWindow show];
+}
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
     if ([NSApp modalWindow]) return NO;
     SEL action = [item action];
-    if (_driveBusy && action != @selector(showCalendar:)) return NO;
+    if (_driveBusy && action != @selector(showCalendar:) && action != @selector(showBalance:)) return NO;
     if ((_saveBusy || _saveTimer || _syncRequested) && (action == @selector(openFile:) || action == @selector(reloadFile:) ||
         action == @selector(openDrive:) || action == @selector(reloadDrive:) || action == @selector(configureDrive:) ||
         action == @selector(disconnectDrive:) || action == @selector(forgetDrive:) || action == @selector(exportFile:))) return NO;
@@ -541,7 +682,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     if (action == @selector(forgetDrive:)) return _driveSettings != nil;
     if (action == @selector(saveFile:)) return _dirty && !_saveBusy;
     if (action == @selector(consolidateXML:)) return _wallet != nil && !_checkpointRequested && !_syncRequested;
-    if (action == @selector(exportFile:) || action == @selector(showCalendar:) || action == @selector(repairHomeBank:)) return _wallet != nil;
+    if (action == @selector(exportFile:) || action == @selector(showCalendar:) || action == @selector(showBalance:) || action == @selector(repairHomeBank:)) return _wallet != nil;
     if (action == @selector(newRecord:)) return [self selectedAccount] != nil;
     return YES;
 }
@@ -734,6 +875,7 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     }
     if (response && downloading) {
         [_path release]; _path = [_driveCachePath copy];
+        [_manualForecasts removeAllObjects];
         [_search setStringValue:@""]; [self adoptCheckpoint:wallet];
     }
     if (response) {
@@ -749,8 +891,9 @@ static NSColor *HBBalanceColor(NSDecimalNumber *value, NSDictionary *account) {
     [self updateButtons];
 }
 - (void)dealloc {
+    [_manualForecasts release]; [_forecastCache release]; [_forecastWallet release]; [_forecastPending release]; [_forecastResult release]; [_forecastControlAccountKey release];
     [_window release]; [_wallet release]; [_path release]; [_visibleAccounts release]; [_visibleRecords release];
     [_saveTimer invalidate]; [_saveTimer release]; [_saveError release]; [_drive release]; [_driveSettings release]; [_driveState release]; [_driveCachePath release];
-    [_balanceTitles release]; [_balanceLabels release]; [_savedData release]; [_savedHash release]; [_savedWallet release]; [_journalState release]; [_calendar release]; [super dealloc];
+    [_balanceTitles release]; [_balanceLabels release]; [_savedData release]; [_savedHash release]; [_savedWallet release]; [_journalState release]; [_calendar release]; [_balanceWindow release]; [super dealloc];
 }
 @end

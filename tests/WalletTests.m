@@ -10,6 +10,8 @@ void HBCheck(BOOL condition, const char *message) {
 #define check HBCheck
 void HBEditingTests(HBWallet *wallet);
 void HBCalendarTests(HBWallet *wallet);
+void HBBalanceHistoryTests(HBWallet *wallet);
+void HBForecastTests(void);
 static HBWallet *parse(NSString *text, NSString **error) {
     return [[[HBWallet alloc] initWithData:[text dataUsingEncoding:NSUTF8StringEncoding] error:error] autorelease];
 }
@@ -83,6 +85,8 @@ int main(int argc, const char *argv[]) {
     check([[[HBWallet alloc] initWithData:large error:&error] autorelease] == nil, "bounded import");
     HBEditingTests(wallet);
     HBCalendarTests(wallet);
+    HBForecastTests();
+    HBBalanceHistoryTests(wallet);
     printf("%d/%d checks passed\n", checks - failures, checks);
     [pool release]; return failures ? 1 : 0;
 }

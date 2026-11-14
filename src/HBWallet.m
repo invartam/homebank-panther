@@ -329,6 +329,10 @@ NSCalendarDate *HBToday(void) {
     return key ? [_accountLookup objectForKey:key] : nil;
 }
 - (NSString *)currencyKeyForAccount:(NSDictionary *)account { return [account objectForKey:@"curr"] ? [account objectForKey:@"curr"] : _baseCurrency; }
+- (NSString *)currencyNameForAccount:(NSDictionary *)account {
+    NSString *key = [self currencyKeyForAccount:account];
+    return HBText([_currencies objectForKey:key], @"iso", [NSString stringWithFormat:@"Devise %@", key]);
+}
 - (unsigned int)fractionDigitsForAccount:(NSDictionary *)account {
     NSDictionary *currency = [_currencies objectForKey:[self currencyKeyForAccount:account]];
     return currency ? [[currency objectForKey:@"frac"] intValue] : 2;

@@ -2,6 +2,7 @@
 #import "HBWallet.h"
 #import "HBOperationEditor.h"
 #import "HBCalendarWindow.h"
+#import "HBBalanceWindow.h"
 #import "HBDrivePanel.h"
 #import "HBJournal.h"
 
@@ -37,6 +38,8 @@ typedef HBIndex HBRow;
     BOOL _dirty;
     BOOL _refreshingSelection;
     HBCalendarWindow *_calendar;
+    HBBalanceWindow *_balanceWindow;
+    NSButton *_graphButton;
     NSButton *_driveButton, *_syncButton;
     NSTextField *_driveLabel;
     HBDriveClient *_drive;
@@ -47,6 +50,15 @@ typedef HBIndex HBRow;
     BOOL _checkpointRequested;
     NSString *_saveError;
     BOOL _driveActive, _driveBusy, _driveLoading, _driveManual;
+    NSButton *_forecastToggle;
+    NSTextField *_forecastDate, *_forecastNote, *_forecastDateHint;
+    NSMutableDictionary *_manualForecasts, *_forecastCache;
+    HBWallet *_forecastWallet;
+    NSDictionary *_forecastPending, *_forecastResult;
+    NSString *_forecastControlAccountKey;
+    unsigned int _forecastRequest;
+    int _forecastToday;
+    BOOL _forecastBusy;
 }
 - (void)buildInterface;
 - (BOOL)openPath:(NSString *)path;

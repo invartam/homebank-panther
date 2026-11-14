@@ -58,12 +58,14 @@ static int HBAdvance(int ordinal, unsigned long unit, unsigned long every, unsig
 }
 
 @implementation HBWallet (Calendar)
-- (NSArray *)forecastFrom:(int)start to:(int)end account:(NSString *)filter includeClosed:(BOOL)closed nextOnly:(BOOL)nextOnly issues:(NSMutableArray *)issues {
+- (NSArray *)forecastFrom:(int)start to:(int)end account:(NSString *)filter includeClosed:(BOOL)closed nextOnly:(BOOL)nextOnly templates:(NSArray *)templates issues:(NSMutableArray *)issues overdue:(unsigned int *)overdue {
     NSMutableArray *entries = [NSMutableArray array];
     unsigned int i, totalSteps = 0;
-    for (i = 0; i < [[self templates] count]; i++) {
-        NSDictionary *raw = [[self templates] objectAtIndex:i];
-        unsigned long flags, recurrence, every, unit, weekend, weekday, order, gap, remaining, date, key, destination;
+    if (!templates) templates = [self templates];
+    if (overdue) *overdue = 0;
+    for (i = 0; i < [templates count]; i++) {
+        NSDictionary *raw = [templates objectAtIndex:i];
+        unsigned long flags, recurrence, every, unit, weekend, weekday, order, gap, remaining, date, key, destination, category, payee, paymode, transferKey;
         if (!HBField(raw, @"flags", 0, 4294967295UL, &flags) || !HBField(raw, @"recflg", ((flags & 4) ? 1 : 0) | ((flags & 128) ? 2 : 0), 7, &recurrence)) {
             [issues addObject:@"Indicateurs de recurrence invalides."]; continue;
         }
@@ -75,12 +77,15 @@ static int HBAdvance(int ordinal, unsigned long unit, unsigned long every, unsig
             && HBField(raw, @"weekend", 0, 3, &weekend) && HBField(raw, @"wkdy", 0, 8, &weekday)
             && HBField(raw, @"ordn", 0, 5, &order) && HBField(raw, @"gap", 0, 3, &gap)
             && HBField(raw, @"nextdate", 0, 3652059, &date) && date > 0 && HBField(raw, @"limit", 0, 65535, &remaining)
-            && HBField(raw, @"dst_account", 0, 4294967295UL, &destination);
+            && HBField(raw, @"dst_account", 0, 4294967295UL, &destination)
+            && HBField(raw, @"category", 0, 4294967295UL, &category) && HBField(raw, @"payee", 0, 4294967295UL, &payee)
+            && HBField(raw, @"paymode", 0, 4294967295UL, &paymode) && HBField(raw, @"kxfer", 0, 4294967295UL, &transferKey);
         NSDecimalNumber *amount = HBMoneyFromText([raw objectForKey:@"amount"] ? [raw objectForKey:@"amount"] : @"0");
         if (!valid || !amount || ((recurrence & 4) && (!weekday || !order))) { [issues addObject:@"Planification invalide ou non prise en charge."]; continue; }
         if ((recurrence & 2) && remaining == 0) continue;
         NSString *destinationKey = [NSString stringWithFormat:@"%lu", destination];
-        BOOL transfer = (flags & 8) != 0;
+        BOOL transfer = HBIsTransfer(raw);
+        if (transfer) flags |= 8;
         NSDictionary *target = [self accountWithKey:destinationKey], *source = [self accountWithKey:accountKey];
         if (filter && ![filter isEqualToString:accountKey] && (!transfer || ![filter isEqualToString:destinationKey])) continue;
         NSDecimalNumber *otherAmount = nil;
@@ -97,12 +102,16 @@ static int HBAdvance(int ordinal, unsigned long unit, unsigned long every, unsig
         while ((nextOnly || date <= (unsigned int)end + 2) && (!(recurrence & 2) || step < remaining)) {
             if (++totalSteps > 50000 || step >= 10000) { [issues addObject:@"Trop d'echeances : projection incomplete."]; break; }
             int posted = HBPostDate(date, weekend);
+            if (overdue && posted < start && (HBVisible(self, accountKey, filter, closed) || (otherAmount && HBVisible(self, destinationKey, filter, closed)))) (*overdue)++;
             if (nextOnly || (posted >= start && posted <= end)) {
                 NSMutableDictionary *entry = [NSMutableDictionary dictionaryWithDictionary:raw];
                 [entry setObject:accountKey forKey:@"account"]; [entry setObject:amount forKey:@"amount"];
                 [entry setObject:[NSString stringWithFormat:@"%d", posted] forKey:@"date"];
                 [entry setObject:[NSString stringWithFormat:@"%lu", flags] forKey:@"flags"];
                 [entry setObject:@"1" forKey:@"__planned"];
+                [entry setObject:[NSNumber numberWithUnsignedInt:i] forKey:@"__templateIndex"];
+                [entry setObject:[NSString stringWithFormat:@"%lu", category] forKey:@"category"];
+                [entry setObject:[NSString stringWithFormat:@"%lu", payee] forKey:@"payee"];
                 if (HBVisible(self, accountKey, filter, closed)) [entries addObject:entry];
                 if (otherAmount && HBVisible(self, destinationKey, filter, closed)) {
                     entry = [NSMutableDictionary dictionaryWithDictionary:entry];
@@ -129,14 +138,21 @@ static int HBAdvance(int ordinal, unsigned long unit, unsigned long every, unsig
             NSDictionary *record = [[self records] objectAtIndex:i]; int date = [[record objectForKey:@"date"] intValue];
             if (date >= start && date <= end && [[record objectForKey:@"st"] intValue] != 3 && HBVisible(self, [record objectForKey:@"account"], key, closed)) [entries addObject:record];
         }
-        if (end > today) [entries addObjectsFromArray:[self forecastFrom:start > today ? start : today + 1 to:end account:key includeClosed:closed nextOnly:NO issues:issues]];
+        if (end > today) [entries addObjectsFromArray:[self forecastFrom:start > today ? start : today + 1 to:end account:key includeClosed:closed nextOnly:NO templates:nil issues:issues overdue:NULL]];
     }
     [entries sortUsingFunction:HBEntryOrder context:NULL];
     if (issuesOut) *issuesOut = issues; return entries;
 }
 - (NSArray *)recurringEntriesForAccount:(NSString *)key includeClosed:(BOOL)closed issues:(NSArray **)issuesOut {
     NSMutableArray *issues = [NSMutableArray array];
-    NSArray *entries = [self forecastFrom:1 to:3652059 account:key includeClosed:closed nextOnly:YES issues:issues];
+    NSArray *entries = [self forecastFrom:1 to:3652059 account:key includeClosed:closed nextOnly:YES templates:nil issues:issues overdue:NULL];
+    if (issuesOut) *issuesOut = issues; return entries;
+}
+- (NSArray *)plannedEntriesFrom:(int)start to:(int)end account:(NSString *)key templates:(NSArray *)templates issues:(NSArray **)issuesOut overdue:(unsigned int *)overdue {
+    NSMutableArray *issues = [NSMutableArray array]; NSArray *entries = [NSArray array];
+    if (overdue) *overdue = 0;
+    if (start < 1 || end > 3652059 || start > end) [issues addObject:@"Plage de prevision invalide."];
+    else entries = [self forecastFrom:start to:end account:key includeClosed:NO nextOnly:NO templates:templates issues:issues overdue:overdue];
     if (issuesOut) *issuesOut = issues; return entries;
 }
 - (NSArray *)totalsForEntries:(NSArray *)entries {
