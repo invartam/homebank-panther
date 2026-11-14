@@ -1,5 +1,29 @@
 # HomeBank Panther
 
+Native **Cocoa personal finance for Mac OS X Panther 10.3.9 on PowerPC**, compatible with unencrypted HomeBank `.xhb` files. Manage transactions and view balance forecasts on a vintage Mac; optional Google Drive synchronization is documented separately. This is a separate application compatible with the HomeBank file format.
+
+**Published release: [0.6.0](https://github.com/invartam/homebank-panther/releases/tag/v0.6.0).** [User guide and real application screenshots](GUIDE_UTILISATEUR.md) · [Build and installation](README_TECHNIQUE.md).
+
+## Compatibility and limits
+
+- Unencrypted XHB files, format up to 1.6, maximum 8 MiB. Back up your wallet before editing.
+- Scheduled transactions are read-only. Consolidate/export changes before reopening the file in the original HomeBank application; follow the user guide.
+- Forecasts are estimates; salary detection and selected-date rules are explained in the French guide.
+
+## Licensing and contributions
+
+No project-wide licence was found. Bundled dependencies retain their notices, including [cJSON](vendor/cjson/LICENSE), [curl](resources/licenses/CURL-COPYING.txt) and [wolfSSL](resources/licenses/WOLFSSL-COPYING.txt). Public source availability alone is not a grant of redistribution rights for the whole application; the project licence needs an owner decision.
+
+Report the application version, Mac/OS version and reproducible steps. Share synthetic examples rather than personal wallet files.
+
+## Related projects
+
+- [HomeBank Panther](https://github.com/invartam/homebank-panther): native personal finance on Mac OS X 10.3.9 PowerPC.
+- [HomeBank Web](https://github.com/invartam/homebank-web): a HomeBank XHB personal finance PWA. [Open the web application](https://blog.benjy.lu/homebank-web/).
+- [DWA-121 Panther driver](https://github.com/invartam/driver-dwa121-macosx-panther): USB Wi-Fi for a supported vintage Macintosh configuration.
+
+## Guide en français
+
 **Vos comptes, vos projets, votre Mac PowerPC.**
 
 HomeBank Panther vous permet de gérer vos finances personnelles sur votre ancien Mac. Retrouvez vos comptes HomeBank, saisissez vos opérations et anticipez vos prochaines dépenses dans une application native conçue pour **Mac OS X 10.3.9**, avec une cible **iMac G3**.
