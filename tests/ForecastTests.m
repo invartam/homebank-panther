@@ -1,20 +1,23 @@
 #import "HBWalletStore.h"
 #import "PantherString.h"
 #include <limits.h>
+#include <stdio.h>
 
 void HBCheck(BOOL condition, const char *message);
 static NSString *FFReplace(NSString *text, NSString *before, NSString *after) {
     return [[text componentsSeparatedByString:before] componentsJoinedByString:after];
 }
-static HBWallet *FFWallet(NSString *content) {
+static HBWallet *FFWalletWithInitial(NSString *content, NSString *initial) {
     NSString *error = nil;
     NSString *xml = [NSString stringWithFormat:@"<homebank v='1.6'><properties curr='1'/><cur key='1' iso='EUR'/><cur key='2' iso='USD'/>"
-        "<account key='1' name='Courant fictif' initial='1000' curr='1'/><account key='2' name='Epargne fictive' type='7' curr='1' initial='100'/>"
+        "<account key='1' name='Courant fictif' initial='%@' curr='1'/><account key='2' name='Epargne fictive' type='7' curr='1' initial='100'/>"
         "<account key='3' name='Dollars fictifs' curr='2' initial='200'/><account key='4' name='Clos fictif' flags='2' initial='50'/>"
-        "<cat key='1' name='Revenus'/><cat key='2' parent='1' name='Salaires'/>%@</homebank>", content];
+        "<cat key='1' name='Revenus'/><cat key='2' parent='1' name='Salaires'/>%@</homebank>", initial, content];
     HBWallet *wallet = [[[HBWallet alloc] initWithData:[xml dataUsingEncoding:NSUTF8StringEncoding] error:&error] autorelease];
+    if (!wallet || error) fprintf(stderr, "forecast fixture rejected: %s\n", error ? [error UTF8String] : "unknown import error");
     HBCheck(wallet != nil && !error, "forecast fixture imports"); return wallet;
 }
+static HBWallet *FFWallet(NSString *content) { return FFWalletWithInitial(content, @"1000"); }
 static NSString *FFSalary(int date, NSString *attributes) {
     return [NSString stringWithFormat:@"<fav key='1' account='1' amount='2000' recflg='1' unit='2' nextdate='%d' wording='Salaire' %@/>", date, attributes];
 }
@@ -98,8 +101,8 @@ void HBForecastTests(void) {
     wallet = FFWallet([NSString stringWithFormat:@"%@%@%@", FFSalary(payday, @""),
         FFReplace(FFExpense(today + 1, @""), @"amount='-100'", @"amount='-0.1'"), FFPosted(today, @"-1000.2", @"")]);
     HBCheck(FFAmount(FFForecast(wallet, today, NO, 0), @"-0.3"), "forecast arithmetic is decimal and exact");
-    wallet = FFWallet([NSString stringWithFormat:@"%@%@%@", FFSalary(payday, @""),
-        FFReplace(FFExpense(today + 1, @""), @"amount='-100'", @"amount='-0.01'"), FFPosted(today, @"1e37", @"")]);
+    wallet = FFWalletWithInitial([NSString stringWithFormat:@"%@%@", FFSalary(payday, @""),
+        FFReplace(FFExpense(today + 1, @""), @"amount='-100'", @"amount='-0.01'")], @"1e37");
     HBCheck(![[FFForecast(wallet, today, NO, 0) objectForKey:@"available"] boolValue], "unrepresentable minor units report unavailable rather than rounding the balance");
     wallet = FFWallet([NSString stringWithFormat:@"%@%@%@", FFExpense(today + 5, @""), FFPosted(today + 5, @"-50", @""), FFPosted(today + 6, @"-90", @"")]);
     HBCheck(FFAmount(FFForecast(wallet, today, NO, 0), @"860") && FFAmount(FFForecast(wallet, today, YES, today + 5), @"850"), "without salary, recorded balance remains the default and chosen date includes planned and posted entries");

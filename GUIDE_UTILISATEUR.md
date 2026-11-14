@@ -32,6 +32,16 @@ Les captures de ce guide proviennent de **la VM QEMU sous Mac OS X 10.3.9**, ave
 
 HomeBank Panther est une application native pour Mac PowerPC sous **Mac OS X 10.3.9**. Une application déjà compilée peut être exécutée sans Xcode. Pour préparer votre propre application dans la VM, suivez le [guide d’installation et de compilation](README_TECHNIQUE.md#compiler-dans-la-vm-panther).
 
+Pour installer le paquet fourni :
+
+1. Téléchargez le [DMG PowerPC 0.6.0](https://github.com/invartam/homebank-panther/releases/download/v0.6.0/HomeBankPanther-0.6.0-ppc.dmg).
+2. Double-cliquez sur le fichier `.dmg` pour monter l’image.
+3. Faites glisser **HomeBankPanther.app** vers le raccourci **Applications**.
+4. Éjectez l’image disque.
+5. Ouvrez **Applications**, puis lancez **HomeBankPanther.app**.
+
+Le DMG contient aussi **Demonstration.xhb**, un fichier **LIRE-MOI.txt** et le dossier **Documentation**. Ce paquet est destiné aux Mac PowerPC ; ce n’est pas un exécutable Intel ou Apple Silicon.
+
 L’application ouvre les fichiers HomeBank **`.xhb` UTF-8 non chiffrés**, jusqu’au format **1.6**, dans la limite de **8 Mio**. Elle organise les données de votre fichier et n’exécute aucun paiement auprès d’une banque.
 
 ### Découvrir l’application sans toucher à ses comptes

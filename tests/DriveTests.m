@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 static int failures = 0, checks = 0;
-static void check(BOOL ok, const char *message) { checks++; if (!ok) { failures++; fprintf(stderr, "FAIL: %s\n", message); } }
+static void HBTestCheck(BOOL ok, const char *message) { checks++; if (!ok) { failures++; fprintf(stderr, "FAIL: %s\n", message); } }
 static NSData *utf8(NSString *text) { return [text dataUsingEncoding:NSUTF8StringEncoding]; }
 static NSDictionary *response(int status, NSData *data) { return [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:status], @"status", data, @"data", nil]; }
 static NSDictionary *decode(NSString *encoded) {
@@ -94,111 +94,112 @@ int main(void) {
     NSDictionary *credentials = [NSDictionary dictionaryWithObjectsAndKeys:@"service_account", @"type", @"fictional@test-project.iam.gserviceaccount.com", @"client_email", @"public-test-key", @"private_key_id", pem, @"private_key", @"https://oauth2.googleapis.com/token", @"token_uri", nil];
     NSData *data = [NSData dataWithContentsOfFile:@"tests/demo.xhb"];
     HBWallet *wallet = [[[HBWallet alloc] initWithData:data error:&error] autorelease];
-    check(wallet != nil && pem != nil, "fictive wallet/key fixtures load; no real credentials are read");
+    HBTestCheck(wallet != nil && pem != nil, "fictive wallet/key fixtures load; no real credentials are read");
     NSException *privateException = [NSException exceptionWithName:NSInvalidArgumentException reason:@"private-token and private-wallet" userInfo:nil];
     NSString *safeMessage = HBDriveExceptionMessage(privateException);
-    check([safeMessage rangeOfString:@"API ou argument"].location != NSNotFound && [safeMessage rangeOfString:@"private"].location == NSNotFound, "exception diagnostics identify the failure class without including sensitive reasons");
+    HBTestCheck([safeMessage rangeOfString:@"API ou argument"].location != NSNotFound && [safeMessage rangeOfString:@"private"].location == NSNotFound, "exception diagnostics identify the failure class without including sensitive reasons");
     safeMessage = HBDriveExceptionMessage([NSException exceptionWithName:@"private-token" reason:@"private-wallet" userInfo:nil]);
-    check([safeMessage rangeOfString:@"private"].location == NSNotFound, "unknown exception names are never echoed");
-    check(HBDriveParseJSON(utf8(@"{\"ok\":true}"), &error) != nil, "JSON object parses");
-    check(HBDriveParseJSON(utf8(@"{\"same\":1,\"same\":2}"), &error) == nil, "duplicate JSON keys rejected");
-    check(HBDriveParseJSON(utf8(@"{} trailing"), &error) == nil, "JSON trailing input rejected");
-    check(HBDriveParseJSON(utf8(@"[]"), &error) == nil, "non-object API root rejected");
-    check(HBDriveParseJSON(utf8(@"{\"id\":\"ok\\u0000hidden\"}"), &error) == nil, "escaped NUL suffix rejected");
+    HBTestCheck([safeMessage rangeOfString:@"private"].location == NSNotFound, "unknown exception names are never echoed");
+    HBTestCheck(HBDriveParseJSON(utf8(@"{\"ok\":true}"), &error) != nil, "JSON object parses");
+    HBTestCheck(HBDriveParseJSON(utf8(@"{\"same\":1,\"same\":2}"), &error) == nil, "duplicate JSON keys rejected");
+    HBTestCheck(HBDriveParseJSON(utf8(@"{} trailing"), &error) == nil, "JSON trailing input rejected");
+    HBTestCheck(HBDriveParseJSON(utf8(@"[]"), &error) == nil, "non-object API root rejected");
+    HBTestCheck(HBDriveParseJSON(utf8(@"{\"id\":\"ok\\u0000hidden\"}"), &error) == nil, "escaped NUL suffix rejected");
     NSMutableString *deep = [NSMutableString stringWithString:@"{\"a\":"]; unsigned int i;
     for (i = 0; i < 70; i++) [deep appendString:@"["]; [deep appendString:@"0"];
     for (i = 0; i < 70; i++) [deep appendString:@"]"]; [deep appendString:@"}"];
-    check(HBDriveParseJSON(utf8(deep), &error) == nil, "JSON recursion bounded");
-    check([HBDriveSHA256(utf8(@"abc")) isEqual:@"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"], "SHA256 uses proven crypto library");
+    HBTestCheck(HBDriveParseJSON(utf8(deep), &error) == nil, "JSON recursion bounded");
+    HBTestCheck([HBDriveSHA256(utf8(@"abc")) isEqual:@"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"], "SHA256 uses proven crypto library");
     NSString *jwt = HBDriveAssertion(credentials, [NSDate dateWithTimeIntervalSince1970:1791398400], &error);
-    check(jwt != nil, "RSA PKCS8 service account assertion signs");
+    HBTestCheck(jwt != nil, "RSA PKCS8 service account assertion signs");
     if (!jwt) fprintf(stderr, "JWT test error: %s\n", [error UTF8String]);
     NSArray *parts = [jwt componentsSeparatedByString:@"."];
     NSDictionary *header = [parts count] == 3 ? decode([parts objectAtIndex:0]) : nil;
     NSDictionary *claims = [parts count] == 3 ? decode([parts objectAtIndex:1]) : nil;
-    check([[header objectForKey:@"alg"] isEqual:@"RS256"] && [[header objectForKey:@"kid"] isEqual:@"public-test-key"], "JWT algorithm and key ID are explicit");
-    check([[claims objectForKey:@"iss"] isEqual:[credentials objectForKey:@"client_email"]] && [[claims objectForKey:@"aud"] isEqual:@"https://oauth2.googleapis.com/token"] && ![claims objectForKey:@"sub"], "JWT has service identity and fixed token audience, no user impersonation");
-    check([[claims objectForKey:@"exp"] doubleValue] - [[claims objectForKey:@"iat"] doubleValue] == 3600, "JWT lifetime limited to one hour");
-    check(HBDriveAssertion(credentials, [NSDate dateWithTimeIntervalSince1970:0], &error) == nil, "implausible system clock refuses authorization");
+    HBTestCheck([[header objectForKey:@"alg"] isEqual:@"RS256"] && [[header objectForKey:@"kid"] isEqual:@"public-test-key"], "JWT algorithm and key ID are explicit");
+    HBTestCheck([[claims objectForKey:@"iss"] isEqual:[credentials objectForKey:@"client_email"]] && [[claims objectForKey:@"aud"] isEqual:@"https://oauth2.googleapis.com/token"] && ![claims objectForKey:@"sub"], "JWT has service identity and fixed token audience, no user impersonation");
+    HBTestCheck([[claims objectForKey:@"exp"] doubleValue] - [[claims objectForKey:@"iat"] doubleValue] == 3600, "JWT lifetime limited to one hour");
+    HBTestCheck(HBDriveAssertion(credentials, [NSDate dateWithTimeIntervalSince1970:0], &error) == nil, "implausible system clock refuses authorization");
     NSMutableDictionary *bad = [NSMutableDictionary dictionaryWithDictionary:credentials]; [bad setObject:@"https://attacker.invalid/token" forKey:@"token_uri"];
-    check(HBDriveAssertion(bad, [NSDate date], &error) == nil, "foreign credential token URI refused");
+    HBTestCheck(HBDriveAssertion(bad, [NSDate date], &error) == nil, "foreign credential token URI refused");
     [bad setObject:@"https://oauth2.googleapis.com/token" forKey:@"token_uri"]; [bad setObject:@"-----BEGIN PRIVATE KEY-----\nbroken\n-----END PRIVATE KEY-----\n" forKey:@"private_key"];
-    check(HBDriveAssertion(bad, [NSDate date], &error) == nil, "invalid RSA key refused before network");
+    HBTestCheck(HBDriveAssertion(bad, [NSDate date], &error) == nil, "invalid RSA key refused before network");
     if (jwt) [utf8(jwt) writeToFile:@"build/drive-test-jwt.txt" atomically:YES];
 
     HBMockDrive *transport = mock(data); HBDriveClient *drive = client(transport, credentials);
     NSDictionary *downloaded = [drive download:&error];
-    check([[[downloaded objectForKey:@"wallet"] sourceData] isEqualToData:data], "Drive loads valid XML without changing it");
-    check(transport->mediaRevisionGuard && transport->authorization && transport->tokens == 1, "media GET selects a revision without metadata If-Match; bearer remains in headers");
-    [drive download:&error]; check(transport->tokens == 1, "valid access token reused in memory");
+    HBTestCheck([[[downloaded objectForKey:@"wallet"] sourceData] isEqualToData:data], "Drive loads valid XML without changing it");
+    HBTestCheck(transport->mediaRevisionGuard && transport->authorization && transport->tokens == 1, "media GET selects a revision without metadata If-Match; bearer remains in headers");
+    [drive download:&error]; HBTestCheck(transport->tokens == 1, "valid access token reused in memory");
 
     NSDictionary *record = [[wallet records] objectAtIndex:0];
     HBWallet *edited = [wallet walletByChangingStatus:@"1" record:record error:&error];
     HBMockDrive *legacyTransport = mock(data);
     HBDriveClient *legacyClient = [[[HBLegacyDriveClient alloc] initWithSettings:[NSDictionary dictionaryWithObject:@"test-file" forKey:@"fileID"] transport:legacyTransport credentials:credentials] autorelease];
-    @try { check([legacyClient download:&error] != nil, "download handles Panther strings without longLongValue"); }
-    @catch (NSException *exception) { check(NO, "download used an unsupported Panther selector"); }
-    @try { check([legacyClient uploadWallet:edited expectedETag:@"\"v1\"" error:&error] != nil, "upload verification handles Panther strings without longLongValue"); }
-    @catch (NSException *exception) { check(NO, "upload used an unsupported Panther selector"); }
+    @try { HBTestCheck([legacyClient download:&error] != nil, "download handles Panther strings without longLongValue"); }
+    @catch (NSException *exception) { HBTestCheck(NO, "download used an unsupported Panther selector"); }
+    @try { HBTestCheck([legacyClient uploadWallet:edited expectedETag:@"\"v1\"" error:&error] != nil, "upload verification handles Panther strings without longLongValue"); }
+    @catch (NSException *exception) { HBTestCheck(NO, "upload used an unsupported Panther selector"); }
     transport = mock(data); drive = client(transport, credentials);
     NSDictionary *uploaded = [drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error];
-    check(uploaded != nil && transport->puts == 1 && transport->conditional && [transport->remote isEqualToData:[edited sourceData]], "upload uses conditional PUT, requests a new revision and verifies saved bytes");
-    check([drive uploadWallet:edited expectedETag:nil error:&error] == nil && transport->puts == 1, "missing remote baseline never uploads");
+    HBTestCheck(uploaded != nil && transport->puts == 1 && transport->conditional && [transport->remote isEqualToData:[edited sourceData]], "upload uses conditional PUT, requests a new revision and verifies saved bytes");
+    HBTestCheck([drive uploadWallet:edited expectedETag:nil error:&error] == nil && transport->puts == 1, "missing remote baseline never uploads");
 
     transport = mock(data); [transport->etag release]; transport->etag = [@"\"external\"" copy]; drive = client(transport, credentials);
-    check([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] == nil && transport->puts == 0 && ![drive retryable], "remote conflict blocks upload, never force-overwrites");
+    HBTestCheck([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] == nil && transport->puts == 0 && ![drive retryable], "remote conflict blocks upload, never force-overwrites");
     transport = mock([edited sourceData]); [transport->etag release]; transport->etag = [@"\"external\"" copy]; drive = client(transport, credentials);
-    check([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] != nil && transport->puts == 0, "already-uploaded identical bytes reconcile without duplicate revision");
+    HBTestCheck([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] != nil && transport->puts == 0, "already-uploaded identical bytes reconcile without duplicate revision");
     transport = mock(data); transport->race = YES; drive = client(transport, credentials);
-    check([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] == nil && [transport->remote isEqualToData:data], "HTTP 412 from write-time race does not replace remote bytes");
+    HBTestCheck([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] == nil && [transport->remote isEqualToData:data], "HTTP 412 from write-time race does not replace remote bytes");
     transport = mock(data); transport->lostResponse = YES; drive = client(transport, credentials);
-    check([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] == nil && [drive retryable], "lost upload response remains pending");
-    check([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] != nil && transport->puts == 1, "retry reconciles lost response through content verification");
+    HBTestCheck([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] == nil && [drive retryable], "lost upload response remains pending");
+    HBTestCheck([drive uploadWallet:edited expectedETag:@"\"v1\"" error:&error] != nil && transport->puts == 1, "retry reconciles lost response through content verification");
     transport = mock(data); transport->changedDuringRead = YES; drive = client(transport, credentials);
-    check([drive download:&error] == nil, "remote change during download rejected");
+    HBTestCheck([drive download:&error] == nil, "remote change during download rejected");
     transport = mock(data); transport->changedRevisionDuringRead = YES; drive = client(transport, credentials);
-    check([drive download:&error] == nil && [drive retryable], "changed head revision rejected even when metadata ETag remains the same");
+    HBTestCheck([drive download:&error] == nil && [drive retryable], "changed head revision rejected even when metadata ETag remains the same");
     transport = mock(data); transport->missingRevision = YES; drive = client(transport, credentials);
-    check([drive download:&error] == nil && transport->puts == 0, "missing head revision never falls back to an unversioned download");
+    HBTestCheck([drive download:&error] == nil && transport->puts == 0, "missing head revision never falls back to an unversioned download");
     transport = mock(data); [transport->revision release]; transport->revision = [@"rev+1/2" copy]; drive = client(transport, credentials);
-    check([drive download:&error] != nil && transport->mediaRevisionGuard, "opaque revision identifier is URL encoded");
+    HBTestCheck([drive download:&error] != nil && transport->mediaRevisionGuard, "opaque revision identifier is URL encoded");
     transport = mock(data); transport->mediaFailureStatus = 412; drive = client(transport, credentials);
-    check([drive download:&error] == nil && [drive retryable] && [error rangeOfString:@"Exporter"].location == NSNotFound, "read precondition failure is a retryable loading error, not a local edit conflict");
+    HBTestCheck([drive download:&error] == nil && [drive retryable] && [error rangeOfString:@"Exporter"].location == NSNotFound, "read precondition failure is a retryable loading error, not a local edit conflict");
     transport = mock(utf8(@"<homebank v='1.7'/>")); drive = client(transport, credentials);
-    check([drive download:&error] == nil, "unsupported HomeBank version from Drive refused");
+    HBTestCheck([drive download:&error] == nil, "unsupported HomeBank version from Drive refused");
     transport = mock(data); transport->malformed = YES; drive = client(transport, credentials);
-    check([drive download:&error] == nil, "malformed metadata rejected without exception");
+    HBTestCheck([drive download:&error] == nil, "malformed metadata rejected without exception");
     transport = mock(data); transport->failureStatus = 404; drive = client(transport, credentials);
-    check([drive download:&error] == nil && [drive fileUnavailable] && ![drive retryable], "missing file identified without repeated retries");
+    HBTestCheck([drive download:&error] == nil && [drive fileUnavailable] && ![drive retryable], "missing file identified without repeated retries");
     transport = mock(data); transport->failureStatus = 403; drive = client(transport, credentials);
-    check([drive download:&error] == nil && ![drive retryable], "permission failure is actionable, not endlessly retried");
+    HBTestCheck([drive download:&error] == nil && ![drive retryable], "permission failure is actionable, not endlessly retried");
     transport = mock(data); transport->failureStatus = 503; drive = client(transport, credentials);
-    check([drive download:&error] == nil && [drive retryable], "temporary server failure allows bounded retry");
+    HBTestCheck([drive download:&error] == nil && [drive retryable], "temporary server failure allows bounded retry");
     transport = mock(data); transport->failureStatus = 401; drive = client(transport, credentials);
-    check([drive download:&error] != nil && transport->tokens == 2, "expired GET authorization refreshed once");
+    HBTestCheck([drive download:&error] != nil && transport->tokens == 2, "expired GET authorization refreshed once");
     transport = mock(data); transport->badToken = YES; drive = client(transport, credentials);
-    check([drive download:&error] == nil && transport->puts == 0, "invalid token expiry rejected");
+    HBTestCheck([drive download:&error] == nil && transport->puts == 0, "invalid token expiry rejected");
 
-    char directory[] = "/tmp/homebank-drive-tests-XXXXXX"; check(mkdtemp(directory) != NULL, "private test directory created");
+    char directory[] = "/tmp/homebank-drive-tests-XXXXXX"; HBTestCheck(mkdtemp(directory) != NULL, "private test directory created");
     NSString *root = [NSString stringWithUTF8String:directory], *statePath = [root stringByAppendingPathComponent:@"state.plist"];
     NSDictionary *state = [NSDictionary dictionaryWithObjectsAndKeys:@"test-file", @"fileID", @"\"v1\"", @"etag", HBDriveSHA256(data), @"syncedSHA256", nil];
-    check(HBDriveWriteState(state, statePath, &error) && [HBDriveReadState(statePath) isEqual:state], "sync baseline persists atomically without credentials");
-    struct stat info; stat([statePath fileSystemRepresentation], &info); check((info.st_mode & 0777) == 0600, "sync state is private");
+    HBTestCheck(HBDriveWriteState(state, statePath, &error) && [HBDriveReadState(statePath) isEqual:state], "sync baseline persists atomically without credentials");
+    struct stat info; stat([statePath fileSystemRepresentation], &info); HBTestCheck((info.st_mode & 0777) == 0600, "sync state is private");
     NSString *link = [root stringByAppendingPathComponent:@"symlink"];
-    symlink([statePath fileSystemRepresentation], [link fileSystemRepresentation]);
-    check(HBDriveReadPrivateFile(link, 65536, &error) == nil && !HBDriveWriteState(state, link, &error), "state read/write reject symlinks");
-    check(HBDriveReadPrivateFile(statePath, 1, &error) == nil, "file read size is bounded");
+    HBTestCheck(symlink([statePath fileSystemRepresentation], [link fileSystemRepresentation]) == 0, "state symlink fixture created");
+    HBTestCheck(HBDriveReadPrivateFile(link, 65536, &error) == nil, "state reads reject symlinks");
+    HBTestCheck(!HBDriveWriteState(state, link, &error), "state writes reject symlinks");
+    HBTestCheck(HBDriveReadPrivateFile(statePath, 1, &error) == nil, "file read size is bounded");
 
     NSString *fakeCurl = [root stringByAppendingPathComponent:@"curl"];
     [[NSFileManager defaultManager] copyPath:@"tests/fixtures/drive-curl.sh" toPath:fakeCurl handler:nil]; chmod([fakeCurl fileSystemRepresentation], 0700);
     NSDictionary *settings = [NSDictionary dictionaryWithObjectsAndKeys:@"test-file", @"fileID", @"test:public-test-key", @"keyAlias", fakeCurl, @"curlPath", statePath, @"caPath", nil];
-    check(HBDriveValidSettings(settings, &error), "settings accept explicit local curl and CA paths");
+    HBTestCheck(HBDriveValidSettings(settings, &error), "settings accept explicit local curl and CA paths");
     HBCurlTransport *curl = [[[HBCurlTransport alloc] initWithSettings:settings] autorelease];
-    check([curl requestURL:@"https://attacker.invalid" method:@"GET" headers:[NSDictionary dictionary] body:nil error:&error] == nil, "transport refuses foreign destinations");
+    HBTestCheck([curl requestURL:@"https://attacker.invalid" method:@"GET" headers:[NSDictionary dictionary] body:nil error:&error] == nil, "transport refuses foreign destinations");
     NSDictionary *curlResult = [curl requestURL:@"https://www.googleapis.com/drive/v2/files/test-file" method:@"GET" headers:[NSDictionary dictionaryWithObject:@"Bearer dummy-token" forKey:@"Authorization"] body:nil error:&error];
-    check([[curlResult objectForKey:@"status"] intValue] == 200 && HBDriveParseJSON([curlResult objectForKey:@"data"], &error) != nil, "mock curl validates TLS flags, private files and stdin-only secrets without network");
-    check([curl requestURL:@"https://www.googleapis.com/drive/v2/files/test-file" method:@"GET" headers:[NSDictionary dictionaryWithObject:@"bad\r\nX: injection" forKey:@"Authorization"] body:nil error:&error] == nil, "header injection refused");
-    check(HBDriveWriteState(state, statePath, &error), "state replacement succeeds");
+    HBTestCheck([[curlResult objectForKey:@"status"] intValue] == 200 && HBDriveParseJSON([curlResult objectForKey:@"data"], &error) != nil, "mock curl validates TLS flags, private files and stdin-only secrets without network");
+    HBTestCheck([curl requestURL:@"https://www.googleapis.com/drive/v2/files/test-file" method:@"GET" headers:[NSDictionary dictionaryWithObject:@"bad\r\nX: injection" forKey:@"Authorization"] body:nil error:&error] == nil, "header injection refused");
+    HBTestCheck(HBDriveWriteState(state, statePath, &error), "state replacement succeeds");
     [[NSFileManager defaultManager] removeFileAtPath:root handler:nil];
     printf("%d/%d Drive checks passed (fictive credentials and transport; no network or Keychain access)\n", checks - failures, checks);
     [pool release]; return failures ? 1 : 0;

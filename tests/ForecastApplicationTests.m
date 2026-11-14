@@ -79,12 +79,12 @@
 @end
 
 static unsigned int checks = 0, failures = 0;
-static void check(BOOL condition, const char *message) { checks++; if (!condition) { failures++; fprintf(stderr, "FAIL: %s\n", message); } }
+static void HBTestCheck(BOOL condition, const char *message) { checks++; if (!condition) { failures++; fprintf(stderr, "FAIL: %s\n", message); } }
 static void waitReady(HFForecastApplication *application) {
     NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:10];
     while (![application ready] && [deadline timeIntervalSinceNow] > 0)
         [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
-    check([application ready], "forecast worker completes on the main thread");
+    HBTestCheck([application ready], "forecast worker completes on the main thread");
 }
 static NSString *dateText(int ordinal) { return [HBDateFromOrdinal(ordinal) descriptionWithCalendarFormat:@"%d/%m/%Y"]; }
 static BOOL shows(HFForecastApplication *application, NSString *amount) { return [[application future] rangeOfString:amount].location != NSNotFound; }
@@ -101,39 +101,39 @@ int main(void) {
         today - 1, today + 20, today + 21, today + 50, today + 2, today + 1, today + 5, today + 3];
     NSString *error = nil; NSData *data = [xml dataUsingEncoding:NSUTF8StringEncoding];
     HBWallet *wallet = [[[HBWallet alloc] initWithData:data error:&error] autorelease];
-    check(wallet && !error, "synthetic UI wallet loads");
+    HBTestCheck(wallet && !error, "synthetic UI wallet loads");
     HFForecastApplication *application = [[HFForecastApplication alloc] initWithWallet:wallet];
     [application chooseAccount:@"1"]; waitReady(application);
-    check(shows(application, @"850,00") && [[application note] hasPrefix:@"Avant le"], "salary budget is the default");
-    check([application enabled] && ![application manual] && ![application dateVisible], "manual option is available on a salary account");
+    HBTestCheck(shows(application, @"850,00") && [[application note] hasPrefix:@"Avant le"], "salary budget is the default");
+    HBTestCheck([application enabled] && ![application manual] && ![application dateVisible], "manual option is available on a salary account");
     unsigned int launches = [application launches]; [application chooseAccount:@"1"];
-    check([application ready] && [application launches] == launches, "reselecting an unchanged account reuses the cached result");
+    HBTestCheck([application ready] && [application launches] == launches, "reselecting an unchanged account reuses the cached result");
     [application chooseManual:YES date:dateText(today + 20)]; waitReady(application);
-    check(shows(application, @"2 850,00") && [[application note] hasPrefix:@"Au"] && [application dateVisible], "manual date overrides salary and includes its day");
-    check([application controlsFit], "forecast controls do not overlap at the minimum window width");
+    HBTestCheck(shows(application, @"2 850,00") && [[application note] hasPrefix:@"Au"] && [application dateVisible], "manual date overrides salary and includes its day");
+    HBTestCheck([application controlsFit], "forecast controls do not overlap at the minimum window width");
     [application chooseAccount:@"2"]; waitReady(application);
-    check(shows(application, @"350,00") && ![application manual], "savings without salary defaults to recorded balances");
+    HBTestCheck(shows(application, @"350,00") && ![application manual], "savings without salary defaults to recorded balances");
     [application chooseManual:YES date:dateText(today + 3)]; waitReady(application);
-    check(shows(application, @"425,00"), "savings supports an inclusive chosen date");
+    HBTestCheck(shows(application, @"425,00"), "savings supports an inclusive chosen date");
     [application chooseAccount:@"1"]; waitReady(application);
-    check([application manual] && shows(application, @"2 850,00"), "manual settings survive switching accounts and remain account-specific");
+    HBTestCheck([application manual] && shows(application, @"2 850,00"), "manual settings survive switching accounts and remain account-specific");
     [application chooseManual:NO date:dateText(today + 20)]; waitReady(application);
-    check(shows(application, @"850,00") && [[application note] hasPrefix:@"Avant le"], "turning the option off restores automatic salary detection");
+    HBTestCheck(shows(application, @"850,00") && [[application note] hasPrefix:@"Avant le"], "turning the option off restores automatic salary detection");
     [application chooseManual:YES date:@"31/02/2026"]; waitReady(application);
-    check([[application future] isEqualToString:@"--"] && [[application note] rangeOfString:@"date valide"].location != NSNotFound, "invalid French dates hide unreliable balances");
+    HBTestCheck([[application future] isEqualToString:@"--"] && [[application note] rangeOfString:@"date valide"].location != NSNotFound, "invalid French dates hide unreliable balances");
     [application chooseManual:YES date:dateText(today - 1)]; waitReady(application);
-    check(![[[application forecast] objectForKey:@"available"] boolValue], "expired manual dates are rejected");
+    HBTestCheck(![[[application forecast] objectForKey:@"available"] boolValue], "expired manual dates are rejected");
     [application chooseManual:NO date:dateText(today + 20)]; waitReady(application);
-    check([wallet generation] == 0 && [[wallet baseSourceData] isEqualToData:data], "forecast controls never edit XML or append to the journal");
+    HBTestCheck([wallet generation] == 0 && [[wallet baseSourceData] isEqualToData:data], "forecast controls never edit XML or append to the journal");
 
     NSDictionary *salaryRecord = nil; unsigned int i;
     for (i = 0; i < [[wallet records] count]; i++) if ([[[[wallet records] objectAtIndex:i] objectForKey:@"category"] isEqualToString:@"2"]) salaryRecord = [[wallet records] objectAtIndex:i];
     HBWallet *changed = [wallet walletByDeletingRecord:salaryRecord error:&error];
     launches = [application launches]; [application replaceWallet:changed]; waitReady(application);
-    check(changed && shows(application, @"650,00") && [application launches] > launches, "wallet edits invalidate cached forecasts without changing other balances");
+    HBTestCheck(changed && shows(application, @"650,00") && [application launches] > launches, "wallet edits invalidate cached forecasts without changing other balances");
     [application chooseAccount:@"3"];
-    check(![application enabled] && ![application dateVisible], "closed accounts have no manual forecast control");
-    [application chooseAccount:nil]; check(![application enabled] && [[application future] length] == 0, "empty account selection stays safe");
+    HBTestCheck(![application enabled] && ![application dateVisible], "closed accounts have no manual forecast control");
+    [application chooseAccount:nil]; HBTestCheck(![application enabled] && [[application future] length] == 0, "empty account selection stays safe");
     [application release];
 
     HFSlowWallet *slow = [[[HFSlowWallet alloc] initWithData:data error:&error] autorelease]; [slow setSlow:YES];
@@ -141,13 +141,13 @@ int main(void) {
     [application chooseAccount:@"1"];
     for (i = 1; i <= 20; i++) [application chooseManual:YES date:dateText(today + i)];
     [application chooseAccount:@"2"]; [application chooseManual:YES date:dateText(today + 3)]; waitReady(application);
-    check(shows(application, @"425,00") && [application launches] <= 2, "rapid date/account changes coalesce into one pending calculation and discard obsolete results");
+    HBTestCheck(shows(application, @"425,00") && [application launches] <= 2, "rapid date/account changes coalesce into one pending calculation and discard obsolete results");
     [application chooseAccount:@"1"]; waitReady(application);
-    check(shows(application, @"2 850,00") && [application manual], "coalescing keeps the latest preference of each account");
+    HBTestCheck(shows(application, @"2 850,00") && [application manual], "coalescing keeps the latest preference of each account");
     NSString *testPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
     [data writeToFile:testPath atomically:YES];
-    check([application openPath:testPath], "explicit import of a synthetic file succeeds"); waitReady(application);
-    check(![application manual] && shows(application, @"850,00"), "opening a file resets session-only forecast choices");
+    HBTestCheck([application openPath:testPath], "explicit import of a synthetic file succeeds"); waitReady(application);
+    HBTestCheck(![application manual] && shows(application, @"850,00"), "opening a file resets session-only forecast choices");
     [[NSFileManager defaultManager] removeFileAtPath:testPath handler:nil];
     [application release];
     printf("%u/%u forecast UI checks passed\n", checks - failures, checks);

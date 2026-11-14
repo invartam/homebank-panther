@@ -46,7 +46,7 @@ void HBBalanceHistoryTests(HBWallet *wallet) {
     HBWallet *transfer = HTParse(scheduled);
     HBCheck(HTAmount(HTHistory(transfer, @"savings", nil, today, 12), HBOrdinalFromFrenchDate(@"30/11/2026"), @"220"), "planned transfers into destination-only scope are included");
     HBCheck(HTAmount(HTHistory(transfer, @"account:1", nil, today, 12), HBOrdinalFromFrenchDate(@"30/11/2026"), @"80"), "source transfers respect remaining installment limit");
-    transfer = HTParse([scheduled stringByReplacingOccurrencesOfString:@"type='7'" withString:@"type='1'"]);
+    transfer = HTParse([[scheduled componentsSeparatedByString:@"type='7'"] componentsJoinedByString:@"type='1'"]);
     HBCheck(HTAmount(HTHistory(transfer, @"bank", nil, today, 12), HBOrdinalFromFrenchDate(@"30/11/2026"), @"300"), "two planned transfer legs cancel inside the same scope");
     HBWallet *foreign = HTParse([NSString stringWithFormat:@"<homebank><cur key='1' iso='EUR'/><cur key='2' iso='USD'/><account key='1' curr='1'/><account key='2' curr='2'/><fav account='1' dst_account='2' amount='-10' damt='12' flags='8' recflg='3' limit='1' unit='2' nextdate='%d'/></homebank>", today + 1]);
     HBCheck(HTAmount(HTHistory(foreign, @"account:2", nil, today, 3), today + 1, @"12"), "cross-currency planned transfer uses saved destination amount");

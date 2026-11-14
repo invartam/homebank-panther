@@ -167,8 +167,16 @@ NSString *HBDriveAssertion(NSDictionary *credentials, NSDate *date, NSString **e
 }
 
 NSData *HBDriveReadPrivateFile(NSString *path, unsigned long maximum, NSString **error) {
-    int fd = open([path fileSystemRepresentation], O_RDONLY | O_NOFOLLOW); struct stat info;
-    if (fd < 0 || fstat(fd, &info) != 0 || !S_ISREG(info.st_mode) || info.st_size <= 0 || (unsigned long long)info.st_size > maximum) {
+    /* Panther accepts O_NOFOLLOW but can still follow a leaf symlink. Validate
+       the path explicitly and bind the opened descriptor to that same file. */
+    struct stat before, info, after;
+    if (lstat([path fileSystemRepresentation], &before) != 0 || !S_ISREG(before.st_mode)) {
+        HBDError(error, @"Fichier absent, trop volumineux ou non regulier."); return nil;
+    }
+    int fd = open([path fileSystemRepresentation], O_RDONLY | O_NOFOLLOW);
+    if (fd < 0 || fstat(fd, &info) != 0 || !S_ISREG(info.st_mode) || info.st_dev != before.st_dev || info.st_ino != before.st_ino ||
+        lstat([path fileSystemRepresentation], &after) != 0 || !S_ISREG(after.st_mode) || info.st_dev != after.st_dev || info.st_ino != after.st_ino ||
+        info.st_size <= 0 || (unsigned long long)info.st_size > maximum) {
         if (fd >= 0) close(fd); HBDError(error, @"Fichier absent, trop volumineux ou non regulier."); return nil;
     }
     NSMutableData *data = [NSMutableData dataWithLength:(unsigned long)info.st_size]; unsigned long offset = 0;

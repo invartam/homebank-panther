@@ -214,7 +214,7 @@
 @end
 
 static int failures, checks;
-static void check(BOOL ok, const char *message) { checks++; if (!ok) { failures++; fprintf(stderr, "FAIL: %s\n", message); } }
+static void HBTestCheck(BOOL ok, const char *message) { checks++; if (!ok) { failures++; fprintf(stderr, "FAIL: %s\n", message); } }
 int main(void) {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     HBWallet *wallet = [HBWallet walletAtPath:@"tests/demo.xhb" error:NULL];
@@ -223,111 +223,111 @@ int main(void) {
     HBCountingWallet *counting = [[[HBCountingWallet alloc] initWithData:[wallet sourceData] error:NULL] autorelease];
     HBFilteringTestApplication *filter = [[[HBFilteringTestApplication alloc] initWithWallet:counting] autorelease];
     [filter query:@""];
-    check(counting->formattedAmounts == 0 && [[filter visibleRecords] isEqualToArray:[counting recordsForAccount:[[counting accounts] objectAtIndex:0]]], "empty search adopts sorted account records without formatting every amount");
+    HBTestCheck(counting->formattedAmounts == 0 && [[filter visibleRecords] isEqualToArray:[counting recordsForAccount:[[counting accounts] objectAtIndex:0]]], "empty search adopts sorted account records without formatting every amount");
     [filter query:@"Courses"];
-    check([[filter visibleRecords] count] == 1 && [[[[filter visibleRecords] objectAtIndex:0] objectForKey:@"wording"] isEqualToString:@"Courses"], "text and hierarchical category search still works");
+    HBTestCheck([[filter visibleRecords] count] == 1 && [[[[filter visibleRecords] objectAtIndex:0] objectForKey:@"wording"] isEqualToString:@"Courses"], "text and hierarchical category search still works");
     [filter query:@"-10,00"];
-    check([[filter visibleRecords] count] == 1 && [[[[filter visibleRecords] objectAtIndex:0] objectForKey:@"amount"] isEqualToNumber:[NSDecimalNumber decimalNumberWithString:@"-10"]], "French amount search still works");
-    [filter query:@"123"]; check([[filter visibleRecords] count] == 1, "payment number search is preserved");
+    HBTestCheck([[filter visibleRecords] count] == 1 && [[[[filter visibleRecords] objectAtIndex:0] objectForKey:@"amount"] isEqualToNumber:[NSDecimalNumber decimalNumberWithString:@"-10"]], "French amount search still works");
+    [filter query:@"123"]; HBTestCheck([[filter visibleRecords] count] == 1, "payment number search is preserved");
     unsigned int formatted = counting->formattedAmounts;
-    [filter query:@""]; check(counting->formattedAmounts == formatted && [[filter visibleRecords] count] == 5, "clearing search does not perform another full formatting pass");
+    [filter query:@""]; HBTestCheck(counting->formattedAmounts == formatted && [[filter visibleRecords] count] == 5, "clearing search does not perform another full formatting pass");
     HBSelectionTestApplication *selection = [[[HBSelectionTestApplication alloc] initWithWallet:wallet] autorelease];
     [selection applyWallet:wallet];
-    check(selection->selections == 1, "programmatic account notifications do not trigger duplicate refreshes");
-    check([[[selection selectedAccount] objectForKey:@"key"] isEqualToString:@"2"], "refresh preserves selected account rather than first account");
+    HBTestCheck(selection->selections == 1, "programmatic account notifications do not trigger duplicate refreshes");
+    HBTestCheck([[[selection selectedAccount] objectForKey:@"key"] isEqualToString:@"2"], "refresh preserves selected account rather than first account");
     HBDeferredCalendarTest *calendar = [[[HBDeferredCalendarTest alloc] initForTest] autorelease];
     [calendar setWallet:wallet]; [calendar setWallet:edited]; [calendar setWallet:newer];
-    check(calendar->refreshes == 1, "hidden calendar does not recalculate projections on every edit");
+    HBTestCheck(calendar->refreshes == 1, "hidden calendar does not recalculate projections on every edit");
     [calendar show];
-    check(calendar->refreshes == 2 && [calendar wallet] == newer, "opening calendar refreshes latest snapshot exactly once");
+    HBTestCheck(calendar->refreshes == 2 && [calendar wallet] == newer, "opening calendar refreshes latest snapshot exactly once");
     [calendar setWallet:edited];
-    check(calendar->refreshes == 3 && [calendar wallet] == edited, "visible calendar keeps its projections current");
+    HBTestCheck(calendar->refreshes == 3 && [calendar wallet] == edited, "visible calendar keeps its projections current");
     HBDriveTestApplication *local = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:NO] autorelease];
-    check(![local drivePending], "unrelated local wallet is not bound to Drive");
+    HBTestCheck(![local drivePending], "unrelated local wallet is not bound to Drive");
     [local applyWallet:edited];
-    check([local dirty] && [local saving] && local->saves == 0 && local->requests == 0, "local edit queues persistence without blocking or sending");
-    check(![local mayDiscard], "close or file switch refused while a local save is queued");
+    HBTestCheck([local dirty] && [local saving] && local->saves == 0 && local->requests == 0, "local edit queues persistence without blocking or sending");
+    HBTestCheck(![local mayDiscard], "close or file switch refused while a local save is queued");
     [local saveFile:nil];
-    check(local->saves == 1 && [local dirty], "manual save launches a worker without claiming success early");
+    HBTestCheck(local->saves == 1 && [local dirty], "manual save launches a worker without claiming success early");
     [local finishSave:YES];
-    check(![local dirty] && ![local saving] && local->requests == 0, "local completion clears dirty state without network");
+    HBTestCheck(![local dirty] && ![local saving] && local->requests == 0, "local completion clears dirty state without network");
 
     HBDriveTestApplication *linked = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:YES] autorelease];
-    check(![linked drivePending], "matching persisted baseline is clean");
+    HBTestCheck(![linked drivePending], "matching persisted baseline is clean");
     [linked applyWallet:edited]; [linked saveFile:nil];
-    check(linked->saves == 1 && linked->requests == 0 && [linked drivePending], "Drive edit saves locally only");
+    HBTestCheck(linked->saves == 1 && linked->requests == 0 && [linked drivePending], "Drive edit saves locally only");
     [linked applyWallet:newer];
-    check(linked->saves == 1 && [linked dirty], "edits during persistence do not start concurrent writers");
+    HBTestCheck(linked->saves == 1 && [linked dirty], "edits during persistence do not start concurrent writers");
     [linked syncDrive:nil];
-    check([linked syncRequested] && linked->requests == 0, "explicit sync waits for durable local data");
-    [linked syncDrive:nil]; check(linked->requests == 0 && linked->saves == 1, "repeated sync clicks are coalesced");
+    HBTestCheck([linked syncRequested] && linked->requests == 0, "explicit sync waits for durable local data");
+    [linked syncDrive:nil]; HBTestCheck(linked->requests == 0 && linked->saves == 1, "repeated sync clicks are coalesced");
     [linked finishSave:YES];
-    check(linked->saves == 2 && linked->requests == 0 && [linked dirty], "old snapshot completion queues latest edit before sending");
-    check([[[linked->saveContext objectForKey:@"journalState"] objectForKey:@"count"] intValue] == 1 &&
+    HBTestCheck(linked->saves == 2 && linked->requests == 0 && [linked dirty], "old snapshot completion queues latest edit before sending");
+    HBTestCheck([[[linked->saveContext objectForKey:@"journalState"] objectForKey:@"count"] intValue] == 1 &&
         [[linked->saveContext objectForKey:@"wallet"] generation] == 2, "next save appends only commands after confirmed journal prefix");
-    check(![linked mayDiscard], "close refused while writer is active");
+    HBTestCheck(![linked mayDiscard], "close refused while writer is active");
     [linked finishSave:YES];
-    check(![linked dirty] && linked->requests == 1 && [linked->lastAction isEqualToString:@"upload"] && ![linked syncRequested], "requested sync starts after latest successful save only");
-    check([linked drivePending], "local save alone never acknowledges remote synchronization");
-    [linked markSynced]; check(![linked drivePending], "confirmed remote baseline clears pending changes");
-    [linked syncDrive:nil]; check(linked->requests == 2 && [linked->lastAction isEqualToString:@"download"], "manual clean sync requests remote updates");
+    HBTestCheck(![linked dirty] && linked->requests == 1 && [linked->lastAction isEqualToString:@"upload"] && ![linked syncRequested], "requested sync starts after latest successful save only");
+    HBTestCheck([linked drivePending], "local save alone never acknowledges remote synchronization");
+    [linked markSynced]; HBTestCheck(![linked drivePending], "confirmed remote baseline clears pending changes");
+    [linked syncDrive:nil]; HBTestCheck(linked->requests == 2 && [linked->lastAction isEqualToString:@"download"], "manual clean sync requests remote updates");
 
     HBDriveTestApplication *pending = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:YES] autorelease];
     [pending applyWallet:edited]; [pending saveFile:nil]; [pending finishSave:YES]; [pending openDrive:nil];
-    check(pending->requests == 0 && [pending drivePending], "opening active pending cache never uploads automatically");
+    HBTestCheck(pending->requests == 0 && [pending drivePending], "opening active pending cache never uploads automatically");
     [pending driveFinished:[NSDictionary dictionaryWithObjectsAndKeys:@"upload", @"action", @"Fictive transient error", @"error", [NSNumber numberWithBool:YES], @"retryable", nil]];
-    check(pending->requests == 0 && [pending drivePending], "network failure retains edits without automatic retry");
+    HBTestCheck(pending->requests == 0 && [pending drivePending], "network failure retains edits without automatic retry");
     HBDriveTestApplication *restored = [[[HBDriveTestApplication alloc] initWithWallet:edited linked:YES] autorelease];
     [restored setBaselineWallet:wallet]; [restored openDrive:nil];
-    check(![restored dirty] && [restored drivePending] && restored->requests == 0, "restored durable changes remain pending without automatic upload");
-    check([restored mayDiscard], "durable unsent changes can survive normal exit without mandatory network");
+    HBTestCheck(![restored dirty] && [restored drivePending] && restored->requests == 0, "restored durable changes remain pending without automatic upload");
+    HBTestCheck([restored mayDiscard], "durable unsent changes can survive normal exit without mandatory network");
 
     HBDriveTestApplication *failed = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:YES] autorelease];
     [failed applyWallet:edited]; [failed syncDrive:nil]; [failed finishSave:NO];
-    check([failed dirty] && ![failed saving] && ![failed syncRequested] && failed->requests == 0, "write failure cancels requested sync and retains edits");
-    check([[failed savedData] isEqualToData:[wallet sourceData]], "failed save does not advance durable baseline");
+    HBTestCheck([failed dirty] && ![failed saving] && ![failed syncRequested] && failed->requests == 0, "write failure cancels requested sync and retains edits");
+    HBTestCheck([[failed savedData] isEqualToData:[wallet sourceData]], "failed save does not advance durable baseline");
     [failed saveFile:nil]; [failed finishSave:YES];
-    check(![failed dirty] && failed->requests == 0 && [failed drivePending], "local retry never revives canceled network request");
+    HBTestCheck(![failed dirty] && failed->requests == 0 && [failed drivePending], "local retry never revives canceled network request");
     [failed setBusy:YES]; [failed applyWallet:newer]; [failed saveFile:nil];
-    check(failed->saves == 2 && [failed dirty], "manual save cannot race active Drive job");
+    HBTestCheck(failed->saves == 2 && [failed dirty], "manual save cannot race active Drive job");
     [failed setBusy:NO]; [failed saveFile:nil]; [failed finishSave:YES];
 
     HBDriveTestApplication *reverted = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:NO] autorelease];
     [reverted applyWallet:edited]; [reverted applyWallet:wallet]; [reverted saveFile:nil];
-    check(![reverted saving] && reverted->saves == 0, "reverting to durable bytes clears debounce without stuck timer");
+    HBTestCheck(![reverted saving] && reverted->saves == 0, "reverting to durable bytes clears debounce without stuck timer");
     HBDriveTestApplication *repair = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:YES] autorelease];
     [repair applyWallet:[wallet commitRecords:[NSArray array] deleting:[NSArray array] payee:nil command:[wallet command:@"normalize" record:nil values:nil] error:NULL]]; [repair saveFile:nil]; [repair finishSave:YES];
-    check(repair->saves == 1 && repair->requests == 0 && [repair drivePending], "format repair saves locally and requires explicit sync");
+    HBTestCheck(repair->saves == 1 && repair->requests == 0 && [repair drivePending], "format repair saves locally and requires explicit sync");
 
     /* Real background writes, isolated fictive wallet, no credentials. */
     char directory[] = "/tmp/homebank-async-save-XXXXXX";
     char *created = mkdtemp(directory);
-    check(created != NULL, "private integration directory created");
+    HBTestCheck(created != NULL, "private integration directory created");
     if (created) {
         NSString *folder = [NSString stringWithUTF8String:created], *path = [folder stringByAppendingPathComponent:@"wallet.xhb"];
-        check(HBWriteWallet(wallet, path, nil, NULL), "fictive initial wallet persisted");
+        HBTestCheck(HBWriteWallet(wallet, path, nil, NULL), "fictive initial wallet persisted");
         HBDriveTestApplication *disk = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:NO] autorelease];
         [disk setTestPath:path]; disk->realWrites = YES;
         [disk applyWallet:edited]; [disk saveFile:nil]; [disk applyWallet:newer];
         NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:10];
         while ([disk saving] && [deadline timeIntervalSinceNow] > 0)
             [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
-        check(![disk saving] && ![disk dirty] && disk->saves == 2, "real asynchronous queue drains both snapshots");
+        HBTestCheck(![disk saving] && ![disk dirty] && disk->saves == 2, "real asynchronous queue drains both snapshots");
         HBWallet *saved = HBRestoreWallet(path, NULL, NULL);
-        check([[saved sourceData] isEqualToData:[newer sourceData]], "disk retains newest edit, not older worker snapshot");
-        check(disk->requests == 0, "real background persistence never invokes Drive");
+        HBTestCheck([[saved sourceData] isEqualToData:[newer sourceData]], "disk retains newest edit, not older worker snapshot");
+        HBTestCheck(disk->requests == 0, "real background persistence never invokes Drive");
         NSString *debouncePath = [folder stringByAppendingPathComponent:@"debounce.xhb"];
-        check(HBWriteWallet(wallet, debouncePath, nil, NULL), "fictive debounce wallet persisted");
+        HBTestCheck(HBWriteWallet(wallet, debouncePath, nil, NULL), "fictive debounce wallet persisted");
         HBDriveTestApplication *debounced = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:NO] autorelease];
         [debounced setTestPath:debouncePath]; debounced->realWrites = YES;
         [debounced applyWallet:edited]; [debounced applyWallet:newer];
-        check(debounced->saves == 0, "rapid edits do not write synchronously");
+        HBTestCheck(debounced->saves == 0, "rapid edits do not write synchronously");
         deadline = [NSDate dateWithTimeIntervalSinceNow:10];
         while ([debounced saving] && [deadline timeIntervalSinceNow] > 0)
             [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
-        check(debounced->saves == 1 && ![debounced dirty] && ![debounced saving], "debounce automatically persists rapid edits in one background write");
-        check([[HBRestoreWallet(debouncePath, NULL, NULL) sourceData] isEqualToData:[newer sourceData]], "debounced journal restores latest edit");
-        check([[NSData dataWithContentsOfFile:path] isEqualToData:[wallet baseSourceData]], "ordinary edits never rewrite base XML");
+        HBTestCheck(debounced->saves == 1 && ![debounced dirty] && ![debounced saving], "debounce automatically persists rapid edits in one background write");
+        HBTestCheck([[HBRestoreWallet(debouncePath, NULL, NULL) sourceData] isEqualToData:[newer sourceData]], "debounced journal restores latest edit");
+        HBTestCheck([[NSData dataWithContentsOfFile:path] isEqualToData:[wallet baseSourceData]], "ordinary edits never rewrite base XML");
         HBDriveTestApplication *upload = [[[HBDriveTestApplication alloc] initWithWallet:wallet linked:YES] autorelease];
         [upload setTestCachePath:path]; [upload setBusy:YES];
         HBFixtureDriveClient *uploadClient = [[[HBFixtureDriveClient alloc] initWithWallet:wallet] autorelease];
@@ -336,8 +336,8 @@ int main(void) {
         [NSThread detachNewThreadSelector:@selector(driveWorker:) toTarget:upload withObject:uploadContext];
         deadline = [NSDate dateWithTimeIntervalSinceNow:10];
         while ([upload driveBusy] && [deadline timeIntervalSinceNow] > 0) [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
-        check(![upload driveBusy] && ![upload drivePending] && [uploadClient->uploadedData isEqualToData:[newer sourceData]], "explicit upload consolidates latest durable journal and sends its XML snapshot");
-        check(![[NSFileManager defaultManager] fileExistsAtPath:[path stringByAppendingString:@".panther-journal"]], "confirmed XML consolidation clears only the acknowledged journal");
+        HBTestCheck(![upload driveBusy] && ![upload drivePending] && [uploadClient->uploadedData isEqualToData:[newer sourceData]], "explicit upload consolidates latest durable journal and sends its XML snapshot");
+        HBTestCheck(![[NSFileManager defaultManager] fileExistsAtPath:[path stringByAppendingString:@".panther-journal"]], "confirmed XML consolidation clears only the acknowledged journal");
         HBWallet *checkpointBase = [HBWallet walletAtPath:path error:NULL];
         HBWallet *pendingFailure = [checkpointBase walletByChangingStatus:@"0" record:[[checkpointBase records] objectAtIndex:0] error:NULL];
         NSString *journalPath = [path stringByAppendingString:@".panther-journal"], *baseHash = HBDriveSHA256([checkpointBase baseSourceData]);
@@ -348,8 +348,8 @@ int main(void) {
         [NSThread detachNewThreadSelector:@selector(driveWorker:) toTarget:upload withObject:uploadContext];
         deadline = [NSDate dateWithTimeIntervalSinceNow:10];
         while ([upload driveBusy] && [deadline timeIntervalSinceNow] > 0) [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
-        check(![upload driveBusy] && [upload drivePending] && ![upload dirty], "network failure retains a durable checkpoint and remote-pending indicator");
-        check([[HBRestoreWallet(path, NULL, NULL) sourceData] isEqualToData:[pendingFailure sourceData]], "restart after failed upload retains every consolidated local change");
+        HBTestCheck(![upload driveBusy] && [upload drivePending] && ![upload dirty], "network failure retains a durable checkpoint and remote-pending indicator");
+        HBTestCheck([[HBRestoreWallet(path, NULL, NULL) sourceData] isEqualToData:[pendingFailure sourceData]], "restart after failed upload retains every consolidated local change");
         path = [folder stringByAppendingPathComponent:@"network.xhb"];
         HBWallet *networkBase = [newer walletForHomeBankExport:NULL]; HBWriteWallet(networkBase, path, nil, NULL);
         HBDriveTestApplication *download = [[[HBDriveTestApplication alloc] initWithWallet:networkBase linked:YES] autorelease];
@@ -361,10 +361,10 @@ int main(void) {
         deadline = [NSDate dateWithTimeIntervalSinceNow:10];
         while ([download driveBusy] && [deadline timeIntervalSinceNow] > 0)
             [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
-        check(![download driveBusy] && client->offMain, "Drive processing runs on background thread with fictive transport");
-        check([[download savedData] isEqualToData:[wallet sourceData]] && ![download drivePending], "completed download adopts already persisted immutable wallet");
+        HBTestCheck(![download driveBusy] && client->offMain, "Drive processing runs on background thread with fictive transport");
+        HBTestCheck([[download savedData] isEqualToData:[wallet sourceData]] && ![download drivePending], "completed download adopts already persisted immutable wallet");
         NSDictionary *state = HBDriveReadState([path stringByAppendingString:@".drive-state.plist"]);
-        check([[state objectForKey:@"etag"] isEqualToString:@"\"v2\""] && [[state objectForKey:@"syncedSHA256"] isEqualToString:HBDriveSHA256([wallet sourceData])], "download worker persists confirmed Drive reference");
+        HBTestCheck([[state objectForKey:@"etag"] isEqualToString:@"\"v2\""] && [[state objectForKey:@"syncedSHA256"] isEqualToString:HBDriveSHA256([wallet sourceData])], "download worker persists confirmed Drive reference");
         [download setBusy:YES];
         context = [NSDictionary dictionaryWithObjectsAndKeys:client, @"client", @"upload", @"action", wallet, @"wallet",
             path, @"cachePath", @"fictive-file", @"fileID", @"\"v2\"", @"etag", nil];
@@ -373,7 +373,7 @@ int main(void) {
         while ([download driveBusy] && [deadline timeIntervalSinceNow] > 0)
             [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]];
         state = HBDriveReadState([path stringByAppendingString:@".drive-state.plist"]);
-        check(![download driveBusy] && [[state objectForKey:@"etag"] isEqualToString:@"\"v3\""], "upload worker persists acknowledgement off the UI thread");
+        HBTestCheck(![download driveBusy] && [[state objectForKey:@"etag"] isEqualToString:@"\"v3\""], "upload worker persists acknowledgement off the UI thread");
         if (![disk saving]) [[NSFileManager defaultManager] removeFileAtPath:folder handler:nil];
     }
     printf("%d/%d asynchronous persistence and manual Drive checks passed (fictive data, no UI, network or Keychain)\n", checks - failures, checks);

@@ -28,6 +28,10 @@ Ce n'est pas un package Electron : ce client utilise Cocoa / Foundation et Objec
 
 ## Compiler Dans La VM Panther
 
+La release **0.6.0** a ete compilee dans QEMU sous **OS X 10.3.9 (7W98)** avec GCC 3.3 et la cible G3 sans AltiVec. Les **442 verifications natives** passent : portefeuille/previsions 194, Drive fictif 53, sauvegarde asynchrone 55, interface des previsions 33, XML 14, journal 43, graphique 28 et diagnostics HTTPS 22. Les **447 verifications modernes** passent egalement ; cinq controles de rendu supplementaires utilisent des API absentes du SDK Panther. Ces essais n'utilisent aucune authentification Drive reelle et ne mesurent pas les performances d'un G3 physique.
+
+Les tests ont ete adaptes aux macros et API du SDK historique. La lecture des fichiers Drive controle explicitement le type du chemin et l'identite du descripteur ouvert : dans le Panther teste, le drapeau `O_NOFOLLOW` seul ne refuse pas les liens symboliques. Le DMG de distribution utilise HFS+ et UDZO ; il est cree, verifie puis monte en lecture seule dans Panther.
+
 Installer les outils en ligne de commande de Xcode 1.5. Transmettre **tout ce dossier**, ou l'archive des sources, a la VM. Dans son Terminal :
 
 ```sh

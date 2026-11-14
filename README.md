@@ -8,6 +8,8 @@ Votre fichier reste au cœur de votre gestion : travaillez localement et synchro
 
 **Version 0.6.0** · **Mac PowerPC** · **Application native Cocoa** · **Fichiers HomeBank `.xhb`**
 
+**[Télécharger le DMG PowerPC 0.6.0](https://github.com/invartam/homebank-panther/releases/download/v0.6.0/HomeBankPanther-0.6.0-ppc.dmg)** · [Notes de version et sources](https://github.com/invartam/homebank-panther/releases/tag/v0.6.0)
+
 [Guide utilisateur illustré](GUIDE_UTILISATEUR.md) · [Le graphique](#votre-solde-dans-le-temps) · [Premiers pas](#premiers-pas) · [Installation et compilation](README_TECHNIQUE.md) · [Configurer Google Drive](DRIVE_SETUP.md)
 
 ## Gardez une vue claire sur vos finances
@@ -64,7 +66,7 @@ L’accès direct depuis Panther utilise un **compte de service Google** dont la
 
 ## Premiers pas
 
-1. Préparez l’application avec le [guide d’installation et de compilation](README_TECHNIQUE.md). Xcode est nécessaire pour compiler, mais pas pour exécuter une application déjà compilée.
+1. Téléchargez le DMG PowerPC, ouvrez-le et copiez **HomeBankPanther.app** dans **Applications**. Éjectez ensuite l’image et lancez l’application depuis Applications. Pour compiler vous-même, suivez le [guide technique](README_TECHNIQUE.md). Xcode n’est pas nécessaire pour exécuter le paquet fourni.
 2. Ouvrez le [portefeuille de démonstration](tests/demo.xhb) pour découvrir les fonctions, puis une copie de votre fichier HomeBank.
 3. Sélectionnez un compte pour consulter ses soldes et saisir vos opérations. Utilisez **Planifications** pour le calendrier et **Graphique** pour l’évolution du solde.
 4. Activez une prévision à date choisie selon vos besoins. Si vous utilisez Drive, cliquez sur **Synchroniser** lorsque vous souhaitez transmettre vos changements.
