@@ -1,6 +1,6 @@
 # Guide utilisateur — HomeBank Panther
 
-**Version 0.6.0 · Mac OS X 10.3.9 · PowerPC**
+**Version 0.6.1 · Mac OS X 10.3.9 · PowerPC**
 
 Ce guide accompagne la consultation de vos comptes, la saisie de vos opérations, les prévisions et la synchronisation de votre fichier HomeBank. Il s’adresse à l’utilisateur de l’application ; la compilation et les composants HTTPS sont décrits dans le [guide technique](README_TECHNIQUE.md).
 
@@ -34,7 +34,7 @@ HomeBank Panther est une application native pour Mac PowerPC sous **Mac OS X 10.
 
 Pour installer le paquet fourni :
 
-1. Téléchargez le [DMG PowerPC 0.6.0](https://github.com/invartam/homebank-panther/releases/download/v0.6.0/HomeBankPanther-0.6.0-ppc.dmg).
+1. Téléchargez le [DMG PowerPC 0.6.1](https://github.com/invartam/homebank-panther/releases/download/v0.6.1/HomeBankPanther-0.6.1-ppc.dmg).
 2. Double-cliquez sur le fichier `.dmg` pour monter l’image.
 3. Faites glisser **HomeBankPanther.app** vers le raccourci **Applications**.
 4. Éjectez l’image disque.

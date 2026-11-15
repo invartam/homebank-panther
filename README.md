@@ -1,8 +1,10 @@
 # HomeBank Panther
 
+<img src="resources/HomeBankPanther-icon.png" width="128" height="128" alt="Icône HomeBank Panther : banque Aqua bleue et pièce dorée">
+
 Native **Cocoa personal finance for Mac OS X Panther 10.3.9 on PowerPC**, compatible with unencrypted HomeBank `.xhb` files. Manage transactions and view balance forecasts on a vintage Mac; optional Google Drive synchronization is documented separately. This is a separate application compatible with the HomeBank file format.
 
-**Published release: [0.6.0](https://github.com/invartam/homebank-panther/releases/tag/v0.6.0).** [User guide and real application screenshots](GUIDE_UTILISATEUR.md) · [Build and installation](README_TECHNIQUE.md).
+**Published release: [0.6.1](https://github.com/invartam/homebank-panther/releases/tag/v0.6.1).** [User guide and real application screenshots](GUIDE_UTILISATEUR.md) · [Build and installation](README_TECHNIQUE.md).
 
 ## Compatibility and limits
 
@@ -30,9 +32,11 @@ HomeBank Panther vous permet de gérer vos finances personnelles sur votre ancie
 
 Votre fichier reste au cœur de votre gestion : travaillez localement et synchronisez vos modifications avec Google Drive quand vous le décidez.
 
-**Version 0.6.0** · **Mac PowerPC** · **Application native Cocoa** · **Fichiers HomeBank `.xhb`**
+**Version 0.6.1** · **Mac PowerPC** · **Application native Cocoa** · **Fichiers HomeBank `.xhb`**
 
-**[Télécharger le DMG PowerPC 0.6.0](https://github.com/invartam/homebank-panther/releases/download/v0.6.0/HomeBankPanther-0.6.0-ppc.dmg)** · [Notes de version et sources](https://github.com/invartam/homebank-panther/releases/tag/v0.6.0)
+La version 0.6.1 ajoute l’icône Aqua de l’application dans le Finder et le Dock. Les fonctions de gestion restent celles de la version 0.6.0.
+
+**[Télécharger le DMG PowerPC 0.6.1](https://github.com/invartam/homebank-panther/releases/download/v0.6.1/HomeBankPanther-0.6.1-ppc.dmg)** · [Notes de version et sources](https://github.com/invartam/homebank-panther/releases/tag/v0.6.1)
 
 [Guide utilisateur illustré](GUIDE_UTILISATEUR.md) · [Le graphique](#votre-solde-dans-le-temps) · [Premiers pas](#premiers-pas) · [Installation et compilation](README_TECHNIQUE.md) · [Configurer Google Drive](DRIVE_SETUP.md)
 

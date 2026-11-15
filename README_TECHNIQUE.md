@@ -4,7 +4,9 @@ Pour decouvrir le logiciel et ses usages, consulter le [README principal](README
 
 Le [guide utilisateur illustre](GUIDE_UTILISATEUR.md) detaille les parcours avec des captures prises dans la VM sous OS X 10.3.9.
 
-Client natif **0.6.0**, cible iMac G3 / PowerPC, Mac OS X 10.3.9 et Xcode 1.5.
+Client natif **0.6.1**, cible iMac G3 / PowerPC, Mac OS X 10.3.9 et Xcode 1.5.
+
+La version 0.6.1 ajoute l'icone Aqua dans le bundle : `resources/HomeBankPanther.icns`, declaree par `CFBundleIconFile` et copiee par la cible `app-resources`. Cette cible actualise aussi Info.plist sans recompiler le code lorsque seules les ressources changent. Le fichier ICNS contient les tailles classiques 16/32/48/128 pixels avec alpha, decodees dans Panther. Les sources PNG et le prompt sont inclus dans l'archive des sources.
 Ce n'est pas un package Electron : ce client utilise Cocoa / Foundation et Objective-C avec gestion manuelle de la memoire. Aucun npm, navigateur moderne ou service reseau n'est requis.
 
 ## Fonctionnalites
@@ -42,12 +44,12 @@ make package HTTPS_PREFIX="$HOME/homebank-https-sources/out/ppc"
 ```
 
 - Application : `build/ppc/HomeBankPanther.app`.
-- Archive : `build/HomeBankPanther-0.6.0-ppc.tar.gz`.
+- Archive : `build/HomeBankPanther-0.6.1-ppc.tar.gz`.
 - Fichier fictif de test : `tests/demo.xhb`.
 
 Le Makefile cible `ppc`, le processeur 750/G3 sans AltiVec, et fixe `MACOSX_DEPLOYMENT_TARGET=10.3`, valeur acceptee par l'ancien linker. Le minimum de l'application dans `Info.plist` reste **10.3.9**. Compiler directement dans Panther avec son compilateur et ses frameworks ; ne pas remplacer ce compilateur par le Xcode actuel. Le Makefile ne produit pas un binaire universel Intel / Apple Silicon.
 
-Construire d'abord le [kit HTTPS](HTTPS_BUILD.md), ou reutiliser celui valide dans la VM. Le bundle inclut curl et les CA, et wolfSSL est lie statiquement pour les signatures du compte de service. Copier l'archive vers l'iMac, la decompresser (`tar -xzf HomeBankPanther-0.6.0-ppc.tar.gz`) puis placer l'application dans Applications. Utiliser **Fichier > Ouvrir** pour un `.xhb` local, ou le menu **Drive** pour le fichier partage. Une operation est editable au double-clic ou avec **Modifier**. Ne pas installer Xcode sur l'iMac pour simplement executer l'application.
+Construire d'abord le [kit HTTPS](HTTPS_BUILD.md), ou reutiliser celui valide dans la VM. Le bundle inclut curl et les CA, et wolfSSL est lie statiquement pour les signatures du compte de service. Copier l'archive vers l'iMac, la decompresser (`tar -xzf HomeBankPanther-0.6.1-ppc.tar.gz`) puis placer l'application dans Applications. Utiliser **Fichier > Ouvrir** pour un `.xhb` local, ou le menu **Drive** pour le fichier partage. Une operation est editable au double-clic ou avec **Modifier**. Ne pas installer Xcode sur l'iMac pour simplement executer l'application.
 
 ### Solde futur avant salaire et date choisie (0.6.0)
 
@@ -167,7 +169,7 @@ Depuis la racine du projet `homebank-panther` :
 make source-package
 ```
 
-L'archive `build/HomeBankPanther-0.6.0-sources.tar.gz` contient le code, les licences, la documentation et les donnees fictives. Elle ne contient aucun portefeuille utilisateur ni cle Google de production. La cle RSA dans `tests/fixtures/drive-rsa-test-key.txt` est une cle de test volontairement publique, jamais utilisable en production.
+L'archive `build/HomeBankPanther-0.6.1-sources.tar.gz` contient le code, les licences, la documentation et les donnees fictives. Elle ne contient aucun portefeuille utilisateur ni cle Google de production. La cle RSA dans `tests/fixtures/drive-rsa-test-key.txt` est une cle de test volontairement publique, jamais utilisable en production.
 
 ## Validation Sur Un Mac Moderne
 

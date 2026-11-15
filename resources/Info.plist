@@ -5,10 +5,11 @@
   <key>CFBundleExecutable</key><string>HomeBankPanther</string>
   <key>CFBundleIdentifier</key><string>lu.benjy.homebankwallet.panther</string>
   <key>CFBundleName</key><string>HomeBank Panther</string>
+  <key>CFBundleIconFile</key><string>HomeBankPanther.icns</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleSignature</key><string>HBPW</string>
-  <key>CFBundleShortVersionString</key><string>0.6.0</string>
-  <key>CFBundleVersion</key><string>0.6.0</string>
+  <key>CFBundleShortVersionString</key><string>0.6.1</string>
+  <key>CFBundleVersion</key><string>0.6.1</string>
   <key>LSMinimumSystemVersion</key><string>10.3.9</string>
   <key>NSPrincipalClass</key><string>NSApplication</string>
   <key>CFBundleDocumentTypes</key>
